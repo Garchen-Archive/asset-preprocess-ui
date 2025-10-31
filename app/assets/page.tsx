@@ -17,6 +17,10 @@ export default async function AssetsPage({
     type?: string;
     source?: string;
     isMediaFile?: string;
+    safeToDelete?: string;
+    formats?: string;
+    sortBy?: string;
+    sortOrder?: string;
     page?: string;
   };
 }) {
@@ -25,6 +29,11 @@ export default async function AssetsPage({
   const typeFilter = searchParams.type || "";
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
+  const safeToDeleteFilter = searchParams.safeToDelete || "";
+  const formatsFilter = searchParams.formats || "";
+  const selectedFormats = formatsFilter ? formatsFilter.split(',') : [];
+  const sortBy = searchParams.sortBy || "createdAt";
+  const sortOrder = searchParams.sortOrder || "desc";
   const page = parseInt(searchParams.page || "1");
   const perPage = 50;
   const offset = (page - 1) * perPage;
@@ -66,6 +75,20 @@ export default async function AssetsPage({
     }
   }
 
+  if (safeToDeleteFilter) {
+    if (safeToDeleteFilter === "true") {
+      conditions.push(eq(archiveAssets.safeToDeleteFromGdrive, true));
+    } else if (safeToDeleteFilter === "false") {
+      conditions.push(eq(archiveAssets.safeToDeleteFromGdrive, false));
+    }
+  }
+
+  if (selectedFormats.length > 0) {
+    conditions.push(
+      or(...selectedFormats.map(format => eq(archiveAssets.fileFormat, format)))
+    );
+  }
+
   // Get total count for pagination
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -74,17 +97,38 @@ export default async function AssetsPage({
 
   const totalPages = Math.ceil(count / perPage);
 
+  // Determine sort column and direction
+  const sortColumn = {
+    name: archiveAssets.name,
+    title: archiveAssets.title,
+    duration: archiveAssets.duration,
+    fileSizeMb: archiveAssets.fileSizeMb,
+    createdAt: archiveAssets.createdAt,
+    updatedAt: archiveAssets.updatedAt,
+    deletedAt: archiveAssets.deletedAt,
+  }[sortBy] || archiveAssets.createdAt;
+
+  const orderByClause = sortOrder === "asc" ? sortColumn : desc(sortColumn);
+
   // Get assets with filters and pagination
   const assets = await db
     .select()
     .from(archiveAssets)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(archiveAssets.createdAt))
+    .orderBy(orderByClause)
     .limit(perPage)
     .offset(offset);
 
+  // Get available file formats dynamically
+  const availableFormats = await db
+    .selectDistinct({ format: archiveAssets.fileFormat })
+    .from(archiveAssets)
+    .where(sql`${archiveAssets.fileFormat} IS NOT NULL`)
+    .orderBy(archiveAssets.fileFormat)
+    .then(results => results.map(r => r.format).filter(Boolean) as string[]);
+
   // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter;
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && selectedFormats.length === 0;
   let stats = null;
 
   if (showStats) {
@@ -174,8 +218,8 @@ export default async function AssetsPage({
       )}
 
       {/* Search and Filters */}
-      <form className="rounded-lg border p-4">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <form className="rounded-lg border p-4" method="GET">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <div className="md:col-span-2">
             <Input
               name="search"
@@ -233,6 +277,44 @@ export default async function AssetsPage({
               <option value="false">Non-Media Files</option>
             </select>
           </div>
+
+          <div>
+            <select
+              name="safeToDelete"
+              defaultValue={safeToDeleteFilter}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="true">Safe to Delete</option>
+              <option value="false">Keep</option>
+            </select>
+          </div>
+        </div>
+
+        {/* File Format Checkboxes */}
+        <div className="mt-4">
+          <label className="text-sm font-medium mb-2 block">
+            File Formats:
+            {selectedFormats.length > 0 && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                ({selectedFormats.length} selected)
+              </span>
+            )}
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {availableFormats.map((format) => (
+              <label key={format} className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="formats"
+                  value={format}
+                  defaultChecked={selectedFormats.includes(format)}
+                  className="rounded border-gray-300"
+                />
+                <span className="uppercase">{format}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-2 mt-4">
@@ -250,7 +332,21 @@ export default async function AssetsPage({
       </div>
 
       {/* Assets Table */}
-      <AssetsTable assets={assets} offset={offset} />
+      <AssetsTable
+        assets={assets}
+        offset={offset}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        searchParams={{
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(typeFilter && { type: typeFilter }),
+          ...(sourceFilter && { source: sourceFilter }),
+          ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
+          ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+          ...(formatsFilter && { formats: formatsFilter }),
+        }}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -267,6 +363,8 @@ export default async function AssetsPage({
                 ...(typeFilter && { type: typeFilter }),
                 ...(sourceFilter && { source: sourceFilter }),
                 ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
+                ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+                ...(formatsFilter && { formats: formatsFilter }),
                 page: String(page - 1)
               })}`}
             >
@@ -334,6 +432,8 @@ export default async function AssetsPage({
                         ...(typeFilter && { type: typeFilter }),
                         ...(sourceFilter && { source: sourceFilter }),
                         ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
+                        ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+                        ...(formatsFilter && { formats: formatsFilter }),
                         page: String(pageNum)
                       })}`}
                     >
@@ -357,6 +457,8 @@ export default async function AssetsPage({
                 ...(typeFilter && { type: typeFilter }),
                 ...(sourceFilter && { source: sourceFilter }),
                 ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
+                ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+                ...(formatsFilter && { formats: formatsFilter }),
                 page: String(page + 1)
               })}`}
             >

@@ -59,14 +59,50 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 type AssetsTableProps = {
   assets: Asset[];
   offset: number;
+  sortBy?: string;
+  sortOrder?: string;
+  searchParams?: Record<string, string>;
 };
 
-export function AssetsTable({ assets, offset }: AssetsTableProps) {
+export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = "desc", searchParams = {} }: AssetsTableProps) {
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
 
   const isColumnVisible = (key: string) => {
     const column = columns.find((col) => col.key === key);
     return column?.visible ?? false;
+  };
+
+  const getSortUrl = (column: string) => {
+    const newSortOrder = sortBy === column && sortOrder === "asc" ? "desc" : "asc";
+    const params = new URLSearchParams({
+      ...searchParams,
+      sortBy: column,
+      sortOrder: newSortOrder,
+    });
+    return `/assets?${params}`;
+  };
+
+  const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => {
+    const isActive = sortBy === column;
+    return (
+      <th className="px-4 py-3 text-left text-sm font-medium">
+        <Link
+          href={getSortUrl(column)}
+          className="flex items-center gap-1 hover:underline group cursor-pointer"
+        >
+          {children}
+          {isActive ? (
+            <span className="text-xs font-bold">
+              {sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+              ↕
+            </span>
+          )}
+        </Link>
+      </th>
+    );
   };
 
   return (
@@ -85,10 +121,10 @@ export function AssetsTable({ assets, offset }: AssetsTableProps) {
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left text-sm font-medium w-16">#</th>
               {isColumnVisible("filename") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Filename</th>
+                <SortableHeader column="name">Filename</SortableHeader>
               )}
               {isColumnVisible("title") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Title</th>
+                <SortableHeader column="title">Title</SortableHeader>
               )}
               {isColumnVisible("type") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
@@ -100,10 +136,10 @@ export function AssetsTable({ assets, offset }: AssetsTableProps) {
                 <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
               )}
               {isColumnVisible("duration") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Duration</th>
+                <SortableHeader column="duration">Duration</SortableHeader>
               )}
               {isColumnVisible("fileSize") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">File Size</th>
+                <SortableHeader column="fileSizeMb">File Size</SortableHeader>
               )}
               {isColumnVisible("category") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Category</th>
@@ -139,10 +175,10 @@ export function AssetsTable({ assets, offset }: AssetsTableProps) {
                 <th className="px-4 py-3 text-left text-sm font-medium">Sample Rate</th>
               )}
               {isColumnVisible("createdAt") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Created At</th>
+                <SortableHeader column="createdAt">Created At</SortableHeader>
               )}
               {isColumnVisible("updatedAt") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Updated At</th>
+                <SortableHeader column="updatedAt">Updated At</SortableHeader>
               )}
               {isColumnVisible("sourceUpdatedAt") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Source Updated</th>

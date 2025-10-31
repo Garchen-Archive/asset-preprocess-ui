@@ -58,6 +58,92 @@ export default async function AssetEditPage({
         </div>
       </div>
 
+      {/* Read-Only Information */}
+      <div className="rounded-lg border p-6 bg-muted/30">
+        <h2 className="text-xl font-semibold mb-4">File Information (Read-Only)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <dt className="font-medium text-muted-foreground">Filename</dt>
+            <dd className="mt-1">{data.name || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">File Path</dt>
+            <dd className="mt-1 break-all">{data.filepath || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Asset Type</dt>
+            <dd className="mt-1">
+              <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
+                {data.assetType || "unknown"}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">File Size</dt>
+            <dd className="mt-1">{data.fileSizeMb ? `${data.fileSizeMb.toFixed(2)} MB` : "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Duration</dt>
+            <dd className="mt-1">{data.duration || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">File Format</dt>
+            <dd className="mt-1 uppercase">{data.fileFormat || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Resolution</dt>
+            <dd className="mt-1">{data.resolution || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Video Codec</dt>
+            <dd className="mt-1">{data.videoCodec || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Audio Codec</dt>
+            <dd className="mt-1">{data.audioCodec || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Metadata Source</dt>
+            <dd className="mt-1 capitalize">{data.metadataSource || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Created At</dt>
+            <dd className="mt-1">{data.createdAt ? new Date(data.createdAt).toLocaleString() : "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-muted-foreground">Last Updated</dt>
+            <dd className="mt-1">{data.updatedAt ? new Date(data.updatedAt).toLocaleString() : "—"}</dd>
+          </div>
+        </div>
+        {(data.gdriveUrl || data.youtubeLink) && (
+          <div className="mt-4 pt-4 border-t">
+            <dt className="font-medium text-muted-foreground mb-2">Links</dt>
+            <div className="flex gap-3">
+              {data.gdriveUrl && data.gdriveUrl.includes('drive.google.com') && (
+                <a
+                  href={data.gdriveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  📁 Open in Google Drive
+                </a>
+              )}
+              {(data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) && (
+                <a
+                  href={data.youtubeLink || data.gdriveUrl!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  ▶️ Watch on YouTube
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Form */}
       <form action={updateAsset.bind(null, params.id)} className="space-y-8">
         {/* Content Section */}

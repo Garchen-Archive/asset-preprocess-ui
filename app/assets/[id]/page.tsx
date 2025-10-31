@@ -242,6 +242,20 @@ export default async function AssetDetailPage({
                 <dd className="text-sm mt-1">{data.backedUpLocally ? "Yes" : "No"}</dd>
               </div>
               <div>
+                <dt className="text-sm font-medium text-muted-foreground">Safe to Delete from GDrive</dt>
+                <dd className="text-sm mt-1">
+                  {data.safeToDeleteFromGdrive ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700">
+                      Yes - Safe to Delete
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-700">
+                      No - Keep
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-sm font-medium text-muted-foreground">Contributor</dt>
                 <dd className="text-sm mt-1">{data.contributorOrg || "—"}</dd>
               </div>
@@ -360,16 +374,32 @@ export default async function AssetDetailPage({
           )}
 
           {/* Additional Metadata */}
-          {data.additionalMetadata && Object.keys(data.additionalMetadata).length > 0 && (
-            <div className="rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">Additional Metadata</h2>
-              <div className="bg-muted/50 rounded p-3">
-                <pre className="text-xs overflow-x-auto">
+          <div className="rounded-lg border p-6">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h2 className="text-xl font-semibold">Additional Metadata</h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JSON field for storing flexible data like original filename, alternative titles, custom tags, etc.
+                </p>
+              </div>
+            </div>
+            {data.additionalMetadata && Object.keys(data.additionalMetadata).length > 0 ? (
+              <div className="bg-muted/50 rounded p-3 mt-3">
+                <pre className="text-xs overflow-x-auto font-mono">
                   {JSON.stringify(data.additionalMetadata, null, 2)}
                 </pre>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-muted/30 rounded p-4 mt-3 border border-dashed">
+                <p className="text-sm text-muted-foreground text-center">
+                  No additional metadata stored
+                </p>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  Use the Edit page to add custom metadata fields
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
