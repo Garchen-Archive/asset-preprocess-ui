@@ -255,7 +255,7 @@ export default async function AssetDetailPage({
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Google Drive</dt>
                 <dd className="text-sm mt-1">
-                  {data.gdriveUrl ? (
+                  {data.gdriveUrl && data.gdriveUrl.includes('drive.google.com') ? (
                     <a
                       href={data.gdriveUrl}
                       target="_blank"
@@ -272,9 +272,9 @@ export default async function AssetDetailPage({
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">YouTube</dt>
                 <dd className="text-sm mt-1">
-                  {data.youtubeLink ? (
+                  {data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be'))) ? (
                     <a
-                      href={data.youtubeLink}
+                      href={data.youtubeLink || data.gdriveUrl!}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"

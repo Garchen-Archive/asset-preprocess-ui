@@ -92,11 +92,18 @@ export default async function EventDetailPage({
                 <dt className="text-sm font-medium text-muted-foreground">End Date</dt>
                 <dd className="text-sm mt-1">{event.eventDateEnd || "—"}</dd>
               </div>
+            </dl>
+          </div>
+
+          {/* Category & Topic */}
+          <div className="rounded-lg border p-6 bg-blue-50/50">
+            <h2 className="text-xl font-semibold mb-4">Category & Topic</h2>
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Category</dt>
                 <dd className="text-sm mt-1">{event.category || "—"}</dd>
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <dt className="text-sm font-medium text-muted-foreground">Topic</dt>
                 <dd className="text-sm mt-1">{event.topic || "—"}</dd>
               </div>

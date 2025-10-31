@@ -135,7 +135,7 @@ export const sessions = pgTable("sessions", {
   eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }), // Changed from series_id to event_id
   sessionName: text("session_name").notNull(),
   sessionDate: date("session_date", { mode: "string" }),
-  sessionTime: time("session_time"),
+  sessionTime: text("session_time"), // Time of day: morning, afternoon, evening, night
   sessionStartTime: time("session_start_time"), // New field
   sessionEndTime: time("session_end_time"), // New field
   sequenceInEvent: integer("sequence_in_event"),

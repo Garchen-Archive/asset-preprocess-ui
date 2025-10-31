@@ -7,8 +7,8 @@ import { UserMenu } from "@/components/user-menu";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Garchen Archive Manager",
-  description: "Manage and catalog Garchen Archive teaching materials",
+  title: "Garchen Archive Asset Catalog Hub",
+  description: "Catalog and prepare Garchen Archive Assets for GA Pipeline",
 };
 
 export default function RootLayout({

@@ -4,9 +4,9 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Garchen Archive Manager</h1>
+        <h1 className="text-4xl font-bold mb-4">Asset Catalog Hub</h1>
         <p className="text-xl text-muted-foreground mb-8">
-          Manage and catalog teaching materials from the Garchen Archive
+          Catalog and prepare Assets for GA Pipeline
         </p>
       </div>
 
