@@ -18,6 +18,7 @@ export default async function AssetsPage({
     source?: string;
     isMediaFile?: string;
     safeToDelete?: string;
+    removeFile?: string;
     formats?: string;
     sortBy?: string;
     sortOrder?: string;
@@ -30,6 +31,7 @@ export default async function AssetsPage({
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
   const safeToDeleteFilter = searchParams.safeToDelete || "";
+  const removeFileFilter = searchParams.removeFile || "";
   const formatsFilter = searchParams.formats || "";
   const selectedFormats = formatsFilter ? formatsFilter.split(',') : [];
   const sortBy = searchParams.sortBy || "createdAt";
@@ -83,6 +85,14 @@ export default async function AssetsPage({
     }
   }
 
+  if (removeFileFilter) {
+    if (removeFileFilter === "true") {
+      conditions.push(eq(archiveAssets.removeFile, true));
+    } else if (removeFileFilter === "false") {
+      conditions.push(eq(archiveAssets.removeFile, false));
+    }
+  }
+
   if (selectedFormats.length > 0) {
     conditions.push(
       or(...selectedFormats.map(format => eq(archiveAssets.fileFormat, format)))
@@ -128,7 +138,7 @@ export default async function AssetsPage({
     .then(results => results.map(r => r.format).filter(Boolean) as string[]);
 
   // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && selectedFormats.length === 0;
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !removeFileFilter && selectedFormats.length === 0;
   let stats = null;
 
   if (showStats) {
@@ -219,7 +229,7 @@ export default async function AssetsPage({
 
       {/* Search and Filters */}
       <form className="rounded-lg border p-4" method="GET">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <Input
               name="search"
@@ -284,9 +294,21 @@ export default async function AssetsPage({
               defaultValue={safeToDeleteFilter}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">All</option>
+              <option value="">All (Safe to Delete)</option>
               <option value="true">Safe to Delete</option>
               <option value="false">Keep</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              name="removeFile"
+              defaultValue={removeFileFilter}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">All (Remove File)</option>
+              <option value="true">Remove File</option>
+              <option value="false">Keep File</option>
             </select>
           </div>
         </div>
@@ -344,6 +366,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+          ...(removeFileFilter && { removeFile: removeFileFilter }),
           ...(formatsFilter && { formats: formatsFilter }),
         }}
       />
