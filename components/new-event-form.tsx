@@ -16,7 +16,7 @@ interface NewEventFormProps {
 }
 
 export function NewEventForm({ eventsList, parentEventId, parentEvent }: NewEventFormProps) {
-  const [state, formAction] = useFormState(createEvent, { error: null });
+  const [state, formAction] = useFormState(createEvent, undefined);
 
   return (
     <div className="space-y-6">

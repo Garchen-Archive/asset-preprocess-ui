@@ -75,7 +75,7 @@ export async function deleteAsset(id: string) {
 // EVENT ACTIONS
 // ============================================================================
 
-export async function createEvent(prevState: any, formData: FormData) {
+export async function createEvent(prevState: { error: string } | undefined, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
 
   const data = {
