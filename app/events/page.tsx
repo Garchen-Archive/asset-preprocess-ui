@@ -4,6 +4,8 @@ import { desc, ilike, or, eq, and, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ExpandableEventRow } from "@/components/expandable-event-row";
+import { Pagination } from "@/components/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +17,16 @@ export default async function EventsPage({
     status?: string;
     type?: string;
     country?: string;
+    page?: string;
   };
 }) {
   const search = searchParams.search || "";
   const statusFilter = searchParams.status || "";
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
+  const page = parseInt(searchParams.page || "1");
+  const perPage = 50;
+  const offset = (page - 1) * perPage;
 
   // Build where conditions
   const conditions = [];
@@ -52,6 +58,14 @@ export default async function EventsPage({
     conditions.push(eq(events.country, countryFilter));
   }
 
+  // Get total count for pagination
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(events)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+  const totalPages = Math.ceil(count / perPage);
+
   // Get events with asset counts and session counts
   const eventsList = await db
     .select({
@@ -76,7 +90,9 @@ export default async function EventsPage({
     })
     .from(events)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(events.createdAt));
+    .orderBy(desc(events.createdAt))
+    .limit(perPage)
+    .offset(offset);
 
   // Get unique countries for filter
   const countries = await db
@@ -171,12 +187,10 @@ export default async function EventsPage({
       </form>
 
       {/* Results Info */}
-      {(search || statusFilter || typeFilter || countryFilter) && (
-        <div className="text-sm text-muted-foreground">
-          Found {eventsList.length} event{eventsList.length !== 1 ? 's' : ''}
-          {search && ` matching "${search}"`}
-        </div>
-      )}
+      <div className="text-sm text-muted-foreground">
+        Showing {offset + 1}-{Math.min(offset + perPage, count)} of {count} events
+        {search && ` matching "${search}"`}
+      </div>
 
       <div className="rounded-md border">
         <table className="w-full">
@@ -196,57 +210,13 @@ export default async function EventsPage({
           </thead>
           <tbody>
             {eventsList.map(({ event, sessionCount, assetCount }, index) => (
-              <tr key={event.id} className="border-b hover:bg-muted/50">
-                <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                <td className="px-4 py-3 text-sm font-mono">{event.eventId}</td>
-                <td className="px-4 py-3 text-sm">{event.eventName}</td>
-                <td className="px-4 py-3 text-sm">{event.eventType || "—"}</td>
-                <td className="px-4 py-3 text-sm">
-                  {event.eventDateStart && event.eventDateEnd
-                    ? `${event.eventDateStart} to ${event.eventDateEnd}`
-                    : event.eventDateStart || "—"}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  {event.city && event.country
-                    ? `${event.city}, ${event.country}`
-                    : event.country || "—"}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                    sessionCount > 0 ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-700"
-                  }`}>
-                    {sessionCount}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                    assetCount > 0 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"
-                  }`}>
-                    {assetCount}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      event.catalogingStatus === "Ready"
-                        ? "bg-green-100 text-green-700"
-                        : event.catalogingStatus === "In Progress"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {event.catalogingStatus || "Not Started"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <Link
-                    href={`/events/${event.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
+              <ExpandableEventRow
+                key={event.id}
+                event={event}
+                sessionCount={sessionCount}
+                assetCount={assetCount}
+                index={index}
+              />
             ))}
           </tbody>
         </table>
@@ -257,6 +227,19 @@ export default async function EventsPage({
           No events found. Create your first event to get started.
         </div>
       )}
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        basePath="/events"
+        searchParams={{
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(typeFilter && { type: typeFilter }),
+          ...(countryFilter && { country: countryFilter }),
+        }}
+      />
     </div>
   );
 }

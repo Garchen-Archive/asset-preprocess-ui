@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AssetsTable } from "@/components/assets-table";
+import { Pagination } from "@/components/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -372,124 +373,21 @@ export default async function AssetsPage({
       />
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            asChild
-            disabled={page <= 1}
-          >
-            <Link
-              href={`/assets?${new URLSearchParams({
-                ...(search && { search }),
-                ...(statusFilter && { status: statusFilter }),
-                ...(typeFilter && { type: typeFilter }),
-                ...(sourceFilter && { source: sourceFilter }),
-                ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
-                ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-                ...(formatsFilter && { formats: formatsFilter }),
-                page: String(page - 1)
-              })}`}
-            >
-              Previous
-            </Link>
-          </Button>
-
-          <div className="flex gap-1">
-            {(() => {
-              const pages = [];
-              const maxVisible = 7; // Show max 7 page numbers
-
-              if (totalPages <= maxVisible) {
-                // Show all pages if total is small
-                for (let i = 1; i <= totalPages; i++) {
-                  pages.push(i);
-                }
-              } else {
-                // Always show first page
-                pages.push(1);
-
-                // Calculate range around current page
-                const startPage = Math.max(2, page - 2);
-                const endPage = Math.min(totalPages - 1, page + 2);
-
-                // Add ellipsis after first page if needed
-                if (startPage > 2) {
-                  pages.push('...');
-                }
-
-                // Add pages around current page
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(i);
-                }
-
-                // Add ellipsis before last page if needed
-                if (endPage < totalPages - 1) {
-                  pages.push('...');
-                }
-
-                // Always show last page
-                pages.push(totalPages);
-              }
-
-              return pages.map((pageNum, index) => {
-                if (pageNum === '...') {
-                  return (
-                    <span key={`ellipsis-${index}`} className="px-2 py-2 text-sm">
-                      ...
-                    </span>
-                  );
-                }
-
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={page === pageNum ? "default" : "outline"}
-                    size="sm"
-                    asChild
-                  >
-                    <Link
-                      href={`/assets?${new URLSearchParams({
-                        ...(search && { search }),
-                        ...(statusFilter && { status: statusFilter }),
-                        ...(typeFilter && { type: typeFilter }),
-                        ...(sourceFilter && { source: sourceFilter }),
-                        ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
-                        ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-                        ...(formatsFilter && { formats: formatsFilter }),
-                        page: String(pageNum)
-                      })}`}
-                    >
-                      {pageNum}
-                    </Link>
-                  </Button>
-                );
-              });
-            })()}
-          </div>
-
-          <Button
-            variant="outline"
-            asChild
-            disabled={page >= totalPages}
-          >
-            <Link
-              href={`/assets?${new URLSearchParams({
-                ...(search && { search }),
-                ...(statusFilter && { status: statusFilter }),
-                ...(typeFilter && { type: typeFilter }),
-                ...(sourceFilter && { source: sourceFilter }),
-                ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
-                ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-                ...(formatsFilter && { formats: formatsFilter }),
-                page: String(page + 1)
-              })}`}
-            >
-              Next
-            </Link>
-          </Button>
-        </div>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        basePath="/assets"
+        searchParams={{
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(typeFilter && { type: typeFilter }),
+          ...(sourceFilter && { source: sourceFilter }),
+          ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
+          ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
+          ...(removeFileFilter && { removeFile: removeFileFilter }),
+          ...(formatsFilter && { formats: formatsFilter }),
+        }}
+      />
     </div>
   );
 }
