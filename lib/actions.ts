@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db/client";
-import { archiveAssets, events, sessions } from "@/lib/db/schema";
+import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -78,6 +78,10 @@ export async function deleteAsset(id: string) {
 export async function createEvent(prevState: { error: string } | undefined, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
 
+  // Extract topic and category IDs from form data
+  const topicIds = formData.getAll("topicIds") as string[];
+  const categoryIds = formData.getAll("categoryIds") as string[];
+
   const data = {
     eventId: formData.get("eventId") as string,
     eventName: formData.get("eventName") as string,
@@ -99,6 +103,26 @@ export async function createEvent(prevState: { error: string } | undefined, form
 
   try {
     const [newEvent] = await db.insert(events).values(data).returning();
+
+    // Create junction table entries for topics
+    if (topicIds.length > 0) {
+      await db.insert(eventTopics).values(
+        topicIds.map(topicId => ({
+          eventId: newEvent.id,
+          topicId: topicId,
+        }))
+      );
+    }
+
+    // Create junction table entries for categories
+    if (categoryIds.length > 0) {
+      await db.insert(eventCategories).values(
+        categoryIds.map(categoryId => ({
+          eventId: newEvent.id,
+          categoryId: categoryId,
+        }))
+      );
+    }
 
     revalidatePath("/events");
     redirect(`/events/${newEvent.id}`);
@@ -180,6 +204,10 @@ export async function assignEventAsChild(eventId: string, parentEventId: string)
 // ============================================================================
 
 export async function createSession(formData: FormData) {
+  // Extract topic and category IDs from form data
+  const topicIds = formData.getAll("topicIds") as string[];
+  const categoryIds = formData.getAll("categoryIds") as string[];
+
   const data = {
     sessionId: formData.get("sessionId") as string,
     eventId: formData.get("eventId") as string || null,
@@ -198,6 +226,26 @@ export async function createSession(formData: FormData) {
   };
 
   const [newSession] = await db.insert(sessions).values(data).returning();
+
+  // Create junction table entries for topics
+  if (topicIds.length > 0) {
+    await db.insert(sessionTopics).values(
+      topicIds.map(topicId => ({
+        sessionId: newSession.id,
+        topicId: topicId,
+      }))
+    );
+  }
+
+  // Create junction table entries for categories
+  if (categoryIds.length > 0) {
+    await db.insert(sessionCategories).values(
+      categoryIds.map(categoryId => ({
+        sessionId: newSession.id,
+        categoryId: categoryId,
+      }))
+    );
+  }
 
   revalidatePath("/sessions");
   redirect(`/sessions/${newSession.id}`);
@@ -245,4 +293,30 @@ export async function deleteSession(id: string) {
 
   revalidatePath("/sessions");
   redirect("/sessions");
+}
+
+// ============================================================================
+// TOPICS AND CATEGORIES ACTIONS
+// ============================================================================
+
+export async function createTopic(name: string) {
+  const [topic] = await db
+    .insert(topics)
+    .values({ name: name.trim() })
+    .returning();
+
+  revalidatePath("/events");
+  revalidatePath("/sessions");
+  return topic;
+}
+
+export async function createCategory(name: string) {
+  const [category] = await db
+    .insert(categories)
+    .values({ name: name.trim() })
+    .returning();
+
+  revalidatePath("/events");
+  revalidatePath("/sessions");
+  return category;
 }

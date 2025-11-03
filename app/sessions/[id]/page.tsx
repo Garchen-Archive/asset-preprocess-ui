@@ -1,8 +1,9 @@
 import { db } from "@/lib/db/client";
-import { sessions, archiveAssets, events } from "@/lib/db/schema";
+import { sessions, archiveAssets, events, topics, categories, sessionTopics, sessionCategories } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
 import { deleteSession } from "@/lib/actions";
 
@@ -34,6 +35,26 @@ export default async function SessionDetailPage({
     .select()
     .from(archiveAssets)
     .where(eq(archiveAssets.sessionId, params.id));
+
+  // Get topics for this session
+  const sessionTopicsList = await db
+    .select({
+      id: topics.id,
+      name: topics.name,
+    })
+    .from(sessionTopics)
+    .innerJoin(topics, eq(sessionTopics.topicId, topics.id))
+    .where(eq(sessionTopics.sessionId, params.id));
+
+  // Get categories for this session
+  const sessionCategoriesList = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(sessionCategories)
+    .innerJoin(categories, eq(sessionCategories.categoryId, categories.id))
+    .where(eq(sessionCategories.sessionId, params.id));
 
   return (
     <div className="space-y-6">
@@ -100,17 +121,37 @@ export default async function SessionDetailPage({
 
           {/* Category & Topic */}
           <div className="rounded-lg border p-6 bg-blue-50/50">
-            <h2 className="text-xl font-semibold mb-4">Category & Topic</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="text-xl font-semibold mb-4">Categories & Topics</h2>
+            <div className="space-y-4">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Category</dt>
-                <dd className="text-sm mt-1">{session.category || "—"}</dd>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Categories</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {sessionCategoriesList.length > 0 ? (
+                    sessionCategoriesList.map((cat) => (
+                      <Badge key={cat.id} variant="secondary">
+                        {cat.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Topic</dt>
-                <dd className="text-sm mt-1">{session.topic || "—"}</dd>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Topics</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {sessionTopicsList.length > 0 ? (
+                    sessionTopicsList.map((topic) => (
+                      <Badge key={topic.id} variant="secondary">
+                        {topic.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </dd>
               </div>
-            </dl>
+            </div>
             {session.sessionDescription && (
               <div className="mt-4">
                 <dt className="text-sm font-medium text-muted-foreground">Description</dt>

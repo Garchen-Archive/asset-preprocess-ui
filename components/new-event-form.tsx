@@ -1,22 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState } from "react-dom";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createEvent } from "@/lib/actions";
-import type { Event } from "@/lib/db/schema";
+import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
+import { createEvent, createTopic, createCategory } from "@/lib/actions";
+import type { Event, Topic, Category } from "@/lib/db/schema";
 
 interface NewEventFormProps {
   eventsList: Event[];
   parentEventId?: string;
   parentEvent?: Event | null;
+  allTopics: Topic[];
+  allCategories: Category[];
 }
 
-export function NewEventForm({ eventsList, parentEventId, parentEvent }: NewEventFormProps) {
+export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics, allCategories }: NewEventFormProps) {
   const [state, formAction] = useFormState(createEvent, undefined);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [topics, setTopics] = useState<Topic[]>(allTopics);
+  const [categories, setCategories] = useState<Category[]>(allCategories);
+
+  const handleCreateTopic = async (name: string) => {
+    const newTopic = await createTopic(name);
+    setTopics([...topics, newTopic]);
+    return newTopic;
+  };
+
+  const handleCreateCategory = async (name: string) => {
+    const newCategory = await createCategory(name);
+    setCategories([...categories, newCategory]);
+    return newCategory;
+  };
 
   return (
     <div className="space-y-6">
@@ -110,27 +130,27 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent }: NewEven
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                name="category"
-                placeholder="e.g., Dharma Teaching, Practice Session"
+              <MultiSelectWithCreate
+                name="categoryIds"
+                label="Categories"
+                availableItems={categories}
+                selectedIds={selectedCategoryIds}
+                onSelectionChange={setSelectedCategoryIds}
+                onCreateNew={handleCreateCategory}
+                placeholder="Search or create category..."
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Comma-delimited categories
-              </p>
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="topic">Topic</Label>
-              <Input
-                id="topic"
-                name="topic"
-                placeholder="e.g., Bodhichitta, Six Perfections"
+              <MultiSelectWithCreate
+                name="topicIds"
+                label="Topics"
+                availableItems={topics}
+                selectedIds={selectedTopicIds}
+                onSelectionChange={setSelectedTopicIds}
+                onCreateNew={handleCreateTopic}
+                placeholder="Search or create topic..."
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Comma-delimited topics
-              </p>
             </div>
 
             <div className="md:col-span-2">

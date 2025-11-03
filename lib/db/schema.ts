@@ -207,3 +207,61 @@ export const credentials = pgTable("credentials", {
 
 export type Credential = typeof credentials.$inferSelect;
 export type NewCredential = typeof credentials.$inferInsert;
+
+// Topics table
+export const topics = pgTable("topics", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Topic = typeof topics.$inferSelect;
+export type NewTopic = typeof topics.$inferInsert;
+
+// Categories table
+export const categories = pgTable("categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
+
+// Event Topics junction table (many-to-many)
+export const eventTopics = pgTable("event_topics", {
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  topicId: uuid("topic_id").notNull().references(() => topics.id, { onDelete: "cascade" }),
+});
+
+export type EventTopic = typeof eventTopics.$inferSelect;
+export type NewEventTopic = typeof eventTopics.$inferInsert;
+
+// Event Categories junction table (many-to-many)
+export const eventCategories = pgTable("event_categories", {
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+});
+
+export type EventCategory = typeof eventCategories.$inferSelect;
+export type NewEventCategory = typeof eventCategories.$inferInsert;
+
+// Session Topics junction table (many-to-many)
+export const sessionTopics = pgTable("session_topics", {
+  sessionId: uuid("session_id").notNull().references(() => sessions.id, { onDelete: "cascade" }),
+  topicId: uuid("topic_id").notNull().references(() => topics.id, { onDelete: "cascade" }),
+});
+
+export type SessionTopic = typeof sessionTopics.$inferSelect;
+export type NewSessionTopic = typeof sessionTopics.$inferInsert;
+
+// Session Categories junction table (many-to-many)
+export const sessionCategories = pgTable("session_categories", {
+  sessionId: uuid("session_id").notNull().references(() => sessions.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+});
+
+export type SessionCategory = typeof sessionCategories.$inferSelect;
+export type NewSessionCategory = typeof sessionCategories.$inferInsert;

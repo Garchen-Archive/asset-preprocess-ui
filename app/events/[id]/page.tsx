@@ -1,8 +1,9 @@
 import { db } from "@/lib/db/client";
-import { events, sessions } from "@/lib/db/schema";
+import { events, sessions, topics, categories, eventTopics, eventCategories } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { notFound } from "next/navigation";
 import { deleteEvent } from "@/lib/actions";
 
@@ -44,6 +45,26 @@ export default async function EventDetailPage({
     .select()
     .from(events)
     .where(eq(events.parentEventId, params.id));
+
+  // Get topics for this event
+  const eventTopicsList = await db
+    .select({
+      id: topics.id,
+      name: topics.name,
+    })
+    .from(eventTopics)
+    .innerJoin(topics, eq(eventTopics.topicId, topics.id))
+    .where(eq(eventTopics.eventId, params.id));
+
+  // Get categories for this event
+  const eventCategoriesList = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(eventCategories)
+    .innerJoin(categories, eq(eventCategories.categoryId, categories.id))
+    .where(eq(eventCategories.eventId, params.id));
 
   return (
     <div className="space-y-6">
@@ -102,17 +123,37 @@ export default async function EventDetailPage({
 
           {/* Category & Topic */}
           <div className="rounded-lg border p-6 bg-blue-50/50">
-            <h2 className="text-xl font-semibold mb-4">Category & Topic</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="text-xl font-semibold mb-4">Categories & Topics</h2>
+            <div className="space-y-4">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Category</dt>
-                <dd className="text-sm mt-1">{event.category || "—"}</dd>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Categories</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {eventCategoriesList.length > 0 ? (
+                    eventCategoriesList.map((cat) => (
+                      <Badge key={cat.id} variant="secondary">
+                        {cat.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Topic</dt>
-                <dd className="text-sm mt-1">{event.topic || "—"}</dd>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Topics</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {eventTopicsList.length > 0 ? (
+                    eventTopicsList.map((topic) => (
+                      <Badge key={topic.id} variant="secondary">
+                        {topic.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </dd>
               </div>
-            </dl>
+            </div>
             {event.eventDescription && (
               <div className="mt-4">
                 <dt className="text-sm font-medium text-muted-foreground">Description</dt>
