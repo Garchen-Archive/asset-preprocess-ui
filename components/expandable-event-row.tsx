@@ -14,7 +14,6 @@ interface Session {
 
 interface ChildEvent {
   id: string;
-  eventId: string;
   eventName: string;
   eventType: string | null;
   eventDateStart: string | null;
@@ -90,7 +89,6 @@ export function ExpandableEventRow({
           )}
           {index + 1}
         </td>
-        <td className="px-4 py-3 text-sm font-mono">{event.eventId}</td>
         <td className="px-4 py-3 text-sm">
           <div>
             {event.eventName}
@@ -188,9 +186,6 @@ export function ExpandableEventRow({
                             href={`/events/${childEvent.id}`}
                             className="text-orange-600 hover:underline inline-flex items-center gap-2"
                           >
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {childEvent.eventId}
-                            </span>
                             <span>{childEvent.eventName}</span>
                             {childEvent.eventType && (
                               <span className="text-xs text-muted-foreground">

@@ -55,16 +55,6 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="eventId">Event ID *</Label>
-              <Input
-                id="eventId"
-                name="eventId"
-                required
-                placeholder="e.g., 2024-summer-retreat"
-              />
-            </div>
-
-            <div className="md:col-span-2">
               <Label htmlFor="eventName">Event Name *</Label>
               <Input
                 id="eventName"

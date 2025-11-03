@@ -87,7 +87,6 @@ export default async function EventDetailPage({
         <div className="flex-1">
           <Breadcrumbs items={breadcrumbItems} />
           <h1 className="text-3xl font-bold">{event.eventName}</h1>
-          <p className="text-muted-foreground font-mono">{event.eventId}</p>
         </div>
         <Button asChild>
           <Link href={`/events/${params.id}/edit`}>Edit</Link>

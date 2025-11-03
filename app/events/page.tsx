@@ -228,8 +228,7 @@ export default async function EventsPage({
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left text-sm font-medium w-16">#</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Event ID</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Event Name</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Date Range</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Location</th>

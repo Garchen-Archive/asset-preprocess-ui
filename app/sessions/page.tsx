@@ -149,7 +149,6 @@ export default async function SessionsPage({
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left text-sm font-medium w-16">#</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Session ID</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Session Name</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Event</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
@@ -162,7 +161,6 @@ export default async function SessionsPage({
             {sessionsList.map(({ session, event }, index) => (
               <tr key={session.id} className="border-b hover:bg-muted/50">
                 <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                <td className="px-4 py-3 text-sm font-mono">{session.sessionId}</td>
                 <td className="px-4 py-3 text-sm">{session.sessionName}</td>
                 <td className="px-4 py-3 text-sm">{event?.eventName || "—"}</td>
                 <td className="px-4 py-3 text-sm">{session.sessionDate || "—"}</td>

@@ -83,7 +83,6 @@ export async function createEvent(prevState: { error: string } | undefined, form
   const categoryIds = formData.getAll("categoryIds") as string[];
 
   const data = {
-    eventId: formData.get("eventId") as string,
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
@@ -133,12 +132,8 @@ export async function createEvent(prevState: { error: string } | undefined, form
     // Log the full error to help debug
     console.error('Create event error:', error);
 
-    // Check for unique constraint violation on event_id
+    // Check for unique constraint violation
     if (error?.code === '23505') {
-      // Check if it's the event_id constraint
-      if (error?.constraint?.includes('event_id') || error?.detail?.includes('event_id')) {
-        return { error: `Event ID "${data.eventId}" already exists. Please use a different Event ID.` };
-      }
       return { error: 'A duplicate value was found. Please check your input.' };
     }
     return { error: `An unexpected error occurred: ${error?.message || 'Please try again.'}` };
@@ -164,7 +159,6 @@ export async function updateEvent(id: string, formData: FormData) {
   const categoryIds = formData.getAll("categoryIds") as string[];
 
   const data = {
-    eventId: formData.get("eventId") as string,
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
@@ -238,7 +232,6 @@ export async function createSession(formData: FormData) {
   const categoryIds = formData.getAll("categoryIds") as string[];
 
   const data = {
-    sessionId: formData.get("sessionId") as string,
     eventId: formData.get("eventId") as string || null,
     sessionName: formData.get("sessionName") as string,
     sessionDate: formData.get("sessionDate") as string || null,
@@ -295,7 +288,6 @@ export async function updateSession(id: string, formData: FormData) {
   const categoryIds = formData.getAll("categoryIds") as string[];
 
   const data = {
-    sessionId: formData.get("sessionId") as string,
     eventId: formData.get("eventId") as string || null,
     sessionName: formData.get("sessionName") as string,
     sessionDate: formData.get("sessionDate") as string || null,

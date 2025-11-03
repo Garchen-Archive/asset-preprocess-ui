@@ -11,7 +11,6 @@ export async function GET(
     const childEvents = await db
       .select({
         id: events.id,
-        eventId: events.eventId,
         eventName: events.eventName,
         eventType: events.eventType,
         eventDateStart: events.eventDateStart,

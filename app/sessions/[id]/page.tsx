@@ -77,7 +77,6 @@ export default async function SessionDetailPage({
         <div className="flex-1">
           <Breadcrumbs items={breadcrumbItems} />
           <h1 className="text-3xl font-bold">{session.sessionName}</h1>
-          <p className="text-muted-foreground font-mono">{session.sessionId}</p>
         </div>
         <Button asChild>
           <Link href={`/sessions/${params.id}/edit`}>Edit</Link>

@@ -38,16 +38,6 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="sessionId">Session ID *</Label>
-              <Input
-                id="sessionId"
-                name="sessionId"
-                required
-                placeholder="e.g., session-01-intro"
-              />
-            </div>
-
-            <div className="md:col-span-2">
               <Label htmlFor="sessionName">Session Name *</Label>
               <Input
                 id="sessionName"
