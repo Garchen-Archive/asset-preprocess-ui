@@ -28,6 +28,16 @@ export default async function EditEventPage({
     .where(ne(events.id, params.id))
     .orderBy(asc(events.eventName));
 
+  // Get parent event if exists
+  const parentEvent = event.parentEventId
+    ? await db
+        .select()
+        .from(events)
+        .where(eq(events.id, event.parentEventId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
+
   // Get all topics and categories
   const allTopics = await db.select().from(topics).orderBy(asc(topics.name));
   const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
@@ -50,6 +60,7 @@ export default async function EditEventPage({
     <EditEventForm
       event={event}
       eventsList={eventsList}
+      parentEvent={parentEvent}
       allTopics={allTopics}
       allCategories={allCategories}
       selectedTopicIds={selectedEventTopics.map(t => t.id)}

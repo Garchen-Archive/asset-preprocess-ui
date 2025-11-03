@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteSession } from "@/lib/actions";
 
@@ -56,16 +57,25 @@ export default async function SessionDetailPage({
     .innerJoin(categories, eq(sessionCategories.categoryId, categories.id))
     .where(eq(sessionCategories.sessionId, params.id));
 
+  // Build breadcrumbs
+  const breadcrumbItems = [
+    { label: "Events", href: "/events" },
+  ];
+
+  if (event) {
+    breadcrumbItems.push({
+      label: event.eventName,
+      href: `/events/${event.id}`,
+    });
+  }
+
+  breadcrumbItems.push({ label: session.sessionName });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <Link
-            href="/sessions"
-            className="text-sm text-muted-foreground hover:underline mb-2 inline-block"
-          >
-            ← Back to Sessions
-          </Link>
+        <div className="flex-1">
+          <Breadcrumbs items={breadcrumbItems} />
           <h1 className="text-3xl font-bold">{session.sessionName}</h1>
           <p className="text-muted-foreground font-mono">{session.sessionId}</p>
         </div>
@@ -159,6 +169,64 @@ export default async function SessionDetailPage({
               </div>
             )}
           </div>
+
+          {/* Location */}
+          {event && (
+            <div className="rounded-lg border p-6">
+              <h2 className="text-xl font-semibold mb-4">Location</h2>
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Center Name</dt>
+                  <dd className="text-sm mt-1">
+                    {event.centerName ? (
+                      <span className="text-muted-foreground italic flex items-center gap-1">
+                        <span className="text-xs">↑</span>
+                        {event.centerName}
+                      </span>
+                    ) : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">City</dt>
+                  <dd className="text-sm mt-1">
+                    {event.city ? (
+                      <span className="text-muted-foreground italic flex items-center gap-1">
+                        <span className="text-xs">↑</span>
+                        {event.city}
+                      </span>
+                    ) : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
+                  <dd className="text-sm mt-1">
+                    {event.stateProvince ? (
+                      <span className="text-muted-foreground italic flex items-center gap-1">
+                        <span className="text-xs">↑</span>
+                        {event.stateProvince}
+                      </span>
+                    ) : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Country</dt>
+                  <dd className="text-sm mt-1">
+                    {event.country ? (
+                      <span className="text-muted-foreground italic flex items-center gap-1">
+                        <span className="text-xs">↑</span>
+                        {event.country}
+                      </span>
+                    ) : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs text-muted-foreground italic">
+                  Location inherited from event: <Link href={`/events/${event.id}`} className="hover:underline text-blue-600">{event.eventName}</Link>
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Assets in this Session */}
           <div className="rounded-lg border p-6">

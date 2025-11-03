@@ -12,8 +12,18 @@ interface Session {
   sequenceInEvent: number | null;
 }
 
+interface ChildEvent {
+  id: string;
+  eventId: string;
+  eventName: string;
+  eventType: string | null;
+  eventDateStart: string | null;
+}
+
 interface ExpandableEventRowProps {
   event: Event;
+  parentEventName: string | null;
+  childEventCount: number;
   sessionCount: number;
   assetCount: number;
   index: number;
@@ -21,23 +31,46 @@ interface ExpandableEventRowProps {
 
 export function ExpandableEventRow({
   event,
+  parentEventName,
+  childEventCount,
   sessionCount,
   assetCount,
   index,
 }: ExpandableEventRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [childEvents, setChildEvents] = useState<ChildEvent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const hasChildren = childEventCount > 0 || sessionCount > 0;
+
   const handleRowClick = async () => {
-    if (!isExpanded && sessionCount > 0 && sessions.length === 0) {
+    if (!isExpanded && hasChildren && childEvents.length === 0 && sessions.length === 0) {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/events/${event.id}/sessions`);
-        const data = await response.json();
-        setSessions(data);
+        const promises = [];
+
+        if (childEventCount > 0) {
+          promises.push(
+            fetch(`/api/events/${event.id}/children`).then(res => res.json())
+          );
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        if (sessionCount > 0) {
+          promises.push(
+            fetch(`/api/events/${event.id}/sessions`).then(res => res.json())
+          );
+        } else {
+          promises.push(Promise.resolve([]));
+        }
+
+        const [childEventsData, sessionsData] = await Promise.all(promises);
+        setChildEvents(childEventsData);
+        setSessions(sessionsData);
       } catch (error) {
-        console.error("Failed to fetch sessions:", error);
+        console.error("Failed to fetch children:", error);
       } finally {
         setIsLoading(false);
       }
@@ -52,13 +85,22 @@ export function ExpandableEventRow({
         onClick={handleRowClick}
       >
         <td className="px-4 py-3 text-sm text-muted-foreground">
-          {sessionCount > 0 && (
+          {hasChildren && (
             <span className="mr-2">{isExpanded ? "▼" : "▶"}</span>
           )}
           {index + 1}
         </td>
         <td className="px-4 py-3 text-sm font-mono">{event.eventId}</td>
-        <td className="px-4 py-3 text-sm">{event.eventName}</td>
+        <td className="px-4 py-3 text-sm">
+          <div>
+            {event.eventName}
+            {parentEventName && (
+              <div className="text-xs text-muted-foreground italic mt-0.5">
+                ↑ {parentEventName}
+              </div>
+            )}
+          </div>
+        </td>
         <td className="px-4 py-3 text-sm">{event.eventType || "—"}</td>
         <td className="px-4 py-3 text-sm">
           {event.eventDateStart && event.eventDateEnd
@@ -69,6 +111,17 @@ export function ExpandableEventRow({
           {event.city && event.country
             ? `${event.city}, ${event.country}`
             : event.country || "—"}
+        </td>
+        <td className="px-4 py-3 text-sm">
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+              childEventCount > 0
+                ? "bg-orange-100 text-orange-700"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {childEventCount}
+          </span>
         </td>
         <td className="px-4 py-3 text-sm">
           <span
@@ -114,38 +167,77 @@ export function ExpandableEventRow({
           </Link>
         </td>
       </tr>
-      {isExpanded && sessionCount > 0 && (
+      {isExpanded && hasChildren && (
         <tr>
-          <td colSpan={10} className="px-4 py-2 bg-muted/30">
+          <td colSpan={11} className="px-4 py-2 bg-muted/30">
             {isLoading ? (
               <div className="text-sm text-muted-foreground py-2">
-                Loading sessions...
+                Loading...
               </div>
             ) : (
-              <div className="pl-8 py-2 space-y-1">
-                <div className="text-xs font-semibold text-muted-foreground mb-2">
-                  Sessions ({sessionCount}):
-                </div>
-                {sessions.map((session) => (
-                  <div key={session.id} className="text-sm">
-                    <Link
-                      href={`/sessions/${session.id}`}
-                      className="text-blue-600 hover:underline inline-flex items-center gap-2"
-                    >
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {session.sequenceInEvent
-                          ? `#${session.sequenceInEvent}`
-                          : "—"}
-                      </span>
-                      <span>{session.sessionName}</span>
-                      {session.sessionDate && (
-                        <span className="text-xs text-muted-foreground">
-                          ({session.sessionDate})
-                        </span>
-                      )}
-                    </Link>
+              <div className="pl-8 py-2 space-y-4">
+                {childEventCount > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                      Child Events ({childEventCount}):
+                    </div>
+                    <div className="space-y-1">
+                      {childEvents.map((childEvent) => (
+                        <div key={childEvent.id} className="text-sm">
+                          <Link
+                            href={`/events/${childEvent.id}`}
+                            className="text-orange-600 hover:underline inline-flex items-center gap-2"
+                          >
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {childEvent.eventId}
+                            </span>
+                            <span>{childEvent.eventName}</span>
+                            {childEvent.eventType && (
+                              <span className="text-xs text-muted-foreground">
+                                ({childEvent.eventType})
+                              </span>
+                            )}
+                            {childEvent.eventDateStart && (
+                              <span className="text-xs text-muted-foreground">
+                                - {childEvent.eventDateStart}
+                              </span>
+                            )}
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {sessionCount > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                      Sessions ({sessionCount}):
+                    </div>
+                    <div className="space-y-1">
+                      {sessions.map((session) => (
+                        <div key={session.id} className="text-sm">
+                          <Link
+                            href={`/sessions/${session.id}`}
+                            className="text-blue-600 hover:underline inline-flex items-center gap-2"
+                          >
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {session.sequenceInEvent
+                                ? `#${session.sequenceInEvent}`
+                                : "—"}
+                            </span>
+                            <span>{session.sessionName}</span>
+                            {session.sessionDate && (
+                              <span className="text-xs text-muted-foreground">
+                                ({session.sessionDate})
+                              </span>
+                            )}
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </td>

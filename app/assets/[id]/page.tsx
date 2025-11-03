@@ -3,6 +3,7 @@ import { archiveAssets, sessions, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { DeleteAssetButton } from "@/components/delete-asset-button";
 
@@ -31,17 +32,33 @@ export default async function AssetDetailPage({
 
   const { asset: data, session, event } = assetData;
 
+  // Build breadcrumbs
+  const breadcrumbItems = [
+    { label: "Events", href: "/events" },
+  ];
+
+  if (event) {
+    breadcrumbItems.push({
+      label: event.eventName,
+      href: `/events/${event.id}`,
+    });
+  }
+
+  if (session) {
+    breadcrumbItems.push({
+      label: session.sessionName,
+      href: `/sessions/${session.id}`,
+    });
+  }
+
+  breadcrumbItems.push({ label: data.title || data.name || "Untitled Asset" });
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <Link
-            href="/assets"
-            className="text-sm text-muted-foreground hover:underline mb-2 inline-block"
-          >
-            ← Back to Assets
-          </Link>
+        <div className="flex-1">
+          <Breadcrumbs items={breadcrumbItems} />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 flex-shrink-0">
               {(data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) && (
@@ -364,30 +381,45 @@ export default async function AssetDetailPage({
             <h2 className="text-xl font-semibold mb-4">System Metadata</h2>
             <dl className="space-y-4">
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+                <dt className="text-sm font-medium text-muted-foreground">Asset Created Date</dt>
                 <dd className="text-sm mt-1">
-                  {data.createdAt
-                    ? new Date(data.createdAt).toLocaleString()
-                    : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Last Updated</dt>
-                <dd className="text-sm mt-1">
-                  {data.updatedAt
-                    ? new Date(data.updatedAt).toLocaleString()
-                    : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Source Last Updated</dt>
-                <dd className="text-sm mt-1">
-                  {data.sourceUpdatedAt
-                    ? new Date(data.sourceUpdatedAt).toLocaleString()
+                  {data.createdDate
+                    ? new Date(data.createdDate).toLocaleString()
                     : "—"}
                 </dd>
               </div>
             </dl>
+
+            {/* Database Timestamps */}
+            <div className="mt-6 pt-4 border-t">
+              <h3 className="text-sm font-medium text-muted-foreground/70 mb-3">Database Timestamps</h3>
+              <dl className="space-y-3 opacity-60">
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Record Created</dt>
+                  <dd className="text-xs mt-1">
+                    {data.createdAt
+                      ? new Date(data.createdAt).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Record Updated</dt>
+                  <dd className="text-xs mt-1">
+                    {data.updatedAt
+                      ? new Date(data.updatedAt).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Source Last Updated</dt>
+                  <dd className="text-xs mt-1">
+                    {data.sourceUpdatedAt
+                      ? new Date(data.sourceUpdatedAt).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
 
           {/* Quality */}

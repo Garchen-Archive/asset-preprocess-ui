@@ -125,6 +125,11 @@ export async function createEvent(prevState: { error: string } | undefined, form
     revalidatePath("/events");
     redirect(`/events/${newEvent.id}`);
   } catch (error: any) {
+    // Re-throw redirect errors (these are not actual errors)
+    if (error?.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
     // Log the full error to help debug
     console.error('Create event error:', error);
 

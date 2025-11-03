@@ -17,6 +17,7 @@ export default async function EventsPage({
     status?: string;
     type?: string;
     country?: string;
+    view?: string;
     page?: string;
   };
 }) {
@@ -24,6 +25,7 @@ export default async function EventsPage({
   const statusFilter = searchParams.status || "";
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
+  const viewFilter = searchParams.view || "top-level"; // Default to top-level events
   const page = parseInt(searchParams.page || "1");
   const perPage = 50;
   const offset = (page - 1) * perPage;
@@ -58,6 +60,11 @@ export default async function EventsPage({
     conditions.push(eq(events.country, countryFilter));
   }
 
+  // Filter by top-level vs all events
+  if (viewFilter === "top-level") {
+    conditions.push(sql`${events.parentEventId} IS NULL`);
+  }
+
   // Get total count for pagination
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -66,10 +73,15 @@ export default async function EventsPage({
 
   const totalPages = Math.ceil(count / perPage);
 
-  // Get events with asset counts and session counts
+  // Get events with asset counts, session counts, child event counts, and parent event name
   const eventsList = await db
     .select({
       event: events,
+      parentEventName: sql<string>`
+        (SELECT e2.event_name
+         FROM events e2
+         WHERE e2.id = events.parent_event_id)
+      `.as('parent_event_name'),
       sessionCount: sql<number>`
         COALESCE(
           (SELECT COUNT(*)
@@ -87,6 +99,14 @@ export default async function EventsPage({
           ), 0
         )::int
       `.as('asset_count'),
+      childEventCount: sql<number>`
+        COALESCE(
+          (SELECT COUNT(*)
+           FROM events e
+           WHERE e.parent_event_id = events.id
+          ), 0
+        )::int
+      `.as('child_event_count'),
     })
     .from(events)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
@@ -124,13 +144,24 @@ export default async function EventsPage({
 
       {/* Search and Filters */}
       <form className="rounded-lg border p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <Input
               name="search"
               placeholder="Search by name, ID, city, or center..."
               defaultValue={search}
             />
+          </div>
+
+          <div>
+            <select
+              name="view"
+              defaultValue={viewFilter}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
+            >
+              <option value="top-level">Top-Level Events</option>
+              <option value="all">All Events</option>
+            </select>
           </div>
 
           <div>
@@ -202,6 +233,7 @@ export default async function EventsPage({
               <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Date Range</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Location</th>
+              <th className="px-4 py-3 text-left text-sm font-medium">Child Events</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Sessions</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Assets</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
@@ -209,10 +241,12 @@ export default async function EventsPage({
             </tr>
           </thead>
           <tbody>
-            {eventsList.map(({ event, sessionCount, assetCount }, index) => (
+            {eventsList.map(({ event, parentEventName, sessionCount, assetCount, childEventCount }, index) => (
               <ExpandableEventRow
                 key={event.id}
                 event={event}
+                parentEventName={parentEventName}
+                childEventCount={childEventCount}
                 sessionCount={sessionCount}
                 assetCount={assetCount}
                 index={index}
@@ -235,6 +269,7 @@ export default async function EventsPage({
         basePath="/events"
         searchParams={{
           ...(search && { search }),
+          ...(viewFilter !== "top-level" && { view: viewFilter }),
           ...(statusFilter && { status: statusFilter }),
           ...(typeFilter && { type: typeFilter }),
           ...(countryFilter && { country: countryFilter }),

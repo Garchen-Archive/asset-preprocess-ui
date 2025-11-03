@@ -13,6 +13,7 @@ import type { Event, Topic, Category } from "@/lib/db/schema";
 interface EditEventFormProps {
   event: Event;
   eventsList: Event[];
+  parentEvent: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
   selectedTopicIds: string[];
@@ -22,6 +23,7 @@ interface EditEventFormProps {
 export function EditEventForm({
   event,
   eventsList,
+  parentEvent,
   allTopics,
   allCategories,
   selectedTopicIds: initialTopicIds,
@@ -149,6 +151,39 @@ export function EditEventForm({
         {/* Location */}
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Location</h2>
+          {parentEvent && (
+            <div className="mb-4 p-3 rounded-md bg-blue-50/50 border border-blue-200">
+              <p className="text-xs font-medium text-muted-foreground mb-2">
+                Inherited from parent event (if fields below are empty):
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {parentEvent.centerName && (
+                  <div>
+                    <span className="text-muted-foreground">Center:</span>{" "}
+                    <span className="italic">{parentEvent.centerName}</span>
+                  </div>
+                )}
+                {parentEvent.city && (
+                  <div>
+                    <span className="text-muted-foreground">City:</span>{" "}
+                    <span className="italic">{parentEvent.city}</span>
+                  </div>
+                )}
+                {parentEvent.stateProvince && (
+                  <div>
+                    <span className="text-muted-foreground">State/Province:</span>{" "}
+                    <span className="italic">{parentEvent.stateProvince}</span>
+                  </div>
+                )}
+                {parentEvent.country && (
+                  <div>
+                    <span className="text-muted-foreground">Country:</span>{" "}
+                    <span className="italic">{parentEvent.country}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="centerName">Center Name</Label>
@@ -156,22 +191,38 @@ export function EditEventForm({
                 id="centerName"
                 name="centerName"
                 defaultValue={event.centerName || ""}
+                placeholder={parentEvent?.centerName || ""}
               />
             </div>
 
             <div>
               <Label htmlFor="city">City</Label>
-              <Input id="city" name="city" defaultValue={event.city || ""} />
+              <Input
+                id="city"
+                name="city"
+                defaultValue={event.city || ""}
+                placeholder={parentEvent?.city || ""}
+              />
             </div>
 
             <div>
               <Label htmlFor="stateProvince">State/Province</Label>
-              <Input id="stateProvince" name="stateProvince" defaultValue={event.stateProvince || ""} />
+              <Input
+                id="stateProvince"
+                name="stateProvince"
+                defaultValue={event.stateProvince || ""}
+                placeholder={parentEvent?.stateProvince || ""}
+              />
             </div>
 
             <div className="md:col-span-2">
               <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" defaultValue={event.country || ""} />
+              <Input
+                id="country"
+                name="country"
+                defaultValue={event.country || ""}
+                placeholder={parentEvent?.country || ""}
+              />
             </div>
           </div>
         </div>

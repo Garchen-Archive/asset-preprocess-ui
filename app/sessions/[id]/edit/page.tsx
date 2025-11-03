@@ -12,14 +12,20 @@ export default async function EditSessionPage({
   params: { id: string };
 }) {
   const [sessionData] = await db
-    .select()
+    .select({
+      session: sessions,
+      event: events,
+    })
     .from(sessions)
+    .leftJoin(events, eq(sessions.eventId, events.id))
     .where(eq(sessions.id, params.id))
     .limit(1);
 
   if (!sessionData) {
     notFound();
   }
+
+  const { session: sessionRecord, event: sessionEvent } = sessionData;
 
   const eventsList = await db.select().from(events).orderBy(asc(events.eventName));
 
@@ -43,8 +49,9 @@ export default async function EditSessionPage({
 
   return (
     <EditSessionForm
-      session={sessionData}
+      session={sessionRecord}
       eventsList={eventsList}
+      sessionEvent={sessionEvent}
       allTopics={allTopics}
       allCategories={allCategories}
       selectedTopicIds={selectedSessionTopics.map(t => t.id)}

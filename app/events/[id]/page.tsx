@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteEvent } from "@/lib/actions";
 
@@ -66,16 +67,25 @@ export default async function EventDetailPage({
     .innerJoin(categories, eq(eventCategories.categoryId, categories.id))
     .where(eq(eventCategories.eventId, params.id));
 
+  // Build breadcrumbs
+  const breadcrumbItems = [
+    { label: "Events", href: "/events" },
+  ];
+
+  if (parentEvent) {
+    breadcrumbItems.push({
+      label: parentEvent.eventName,
+      href: `/events/${parentEvent.id}`,
+    });
+  }
+
+  breadcrumbItems.push({ label: event.eventName });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <Link
-            href="/events"
-            className="text-sm text-muted-foreground hover:underline mb-2 inline-block"
-          >
-            ← Back to Events
-          </Link>
+        <div className="flex-1">
+          <Breadcrumbs items={breadcrumbItems} />
           <h1 className="text-3xl font-bold">{event.eventName}</h1>
           <p className="text-muted-foreground font-mono">{event.eventId}</p>
         </div>
@@ -168,21 +178,56 @@ export default async function EventDetailPage({
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Center Name</dt>
-                <dd className="text-sm mt-1">{event.centerName || "—"}</dd>
+                <dd className="text-sm mt-1">
+                  {event.centerName || (parentEvent?.centerName ? (
+                    <span className="text-muted-foreground italic flex items-center gap-1">
+                      <span className="text-xs">↑</span>
+                      {parentEvent.centerName}
+                    </span>
+                  ) : "—")}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">City</dt>
-                <dd className="text-sm mt-1">{event.city || "—"}</dd>
+                <dd className="text-sm mt-1">
+                  {event.city || (parentEvent?.city ? (
+                    <span className="text-muted-foreground italic flex items-center gap-1">
+                      <span className="text-xs">↑</span>
+                      {parentEvent.city}
+                    </span>
+                  ) : "—")}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
-                <dd className="text-sm mt-1">{event.stateProvince || "—"}</dd>
+                <dd className="text-sm mt-1">
+                  {event.stateProvince || (parentEvent?.stateProvince ? (
+                    <span className="text-muted-foreground italic flex items-center gap-1">
+                      <span className="text-xs">↑</span>
+                      {parentEvent.stateProvince}
+                    </span>
+                  ) : "—")}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Country</dt>
-                <dd className="text-sm mt-1">{event.country || "—"}</dd>
+                <dd className="text-sm mt-1">
+                  {event.country || (parentEvent?.country ? (
+                    <span className="text-muted-foreground italic flex items-center gap-1">
+                      <span className="text-xs">↑</span>
+                      {parentEvent.country}
+                    </span>
+                  ) : "—")}
+                </dd>
               </div>
             </dl>
+            {parentEvent && !event.centerName && !event.city && !event.stateProvince && !event.country && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs text-muted-foreground italic">
+                  Location inherited from parent event
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Child Events */}

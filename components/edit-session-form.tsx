@@ -13,6 +13,7 @@ import type { Session, Event, Topic, Category } from "@/lib/db/schema";
 interface EditSessionFormProps {
   session: Session;
   eventsList: Event[];
+  sessionEvent: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
   selectedTopicIds: string[];
@@ -22,6 +23,7 @@ interface EditSessionFormProps {
 export function EditSessionForm({
   session,
   eventsList,
+  sessionEvent,
   allTopics,
   allCategories,
   selectedTopicIds: initialTopicIds,
@@ -201,6 +203,42 @@ export function EditSessionForm({
             </div>
           </div>
         </div>
+
+        {/* Location (Inherited from Event) */}
+        {sessionEvent && (
+          <div className="rounded-lg border p-6 bg-muted/30">
+            <h2 className="text-xl font-semibold mb-2">Location</h2>
+            <p className="text-xs text-muted-foreground italic mb-4">
+              Inherited from event: {sessionEvent.eventName}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {sessionEvent.centerName && (
+                <div>
+                  <span className="text-muted-foreground font-medium">Center:</span>{" "}
+                  <span className="italic">{sessionEvent.centerName}</span>
+                </div>
+              )}
+              {sessionEvent.city && (
+                <div>
+                  <span className="text-muted-foreground font-medium">City:</span>{" "}
+                  <span className="italic">{sessionEvent.city}</span>
+                </div>
+              )}
+              {sessionEvent.stateProvince && (
+                <div>
+                  <span className="text-muted-foreground font-medium">State/Province:</span>{" "}
+                  <span className="italic">{sessionEvent.stateProvince}</span>
+                </div>
+              )}
+              {sessionEvent.country && (
+                <div>
+                  <span className="text-muted-foreground font-medium">Country:</span>{" "}
+                  <span className="italic">{sessionEvent.country}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" asChild>
