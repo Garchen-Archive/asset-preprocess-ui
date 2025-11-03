@@ -63,6 +63,21 @@ export default async function EventDetailPage({
         </Button>
       </div>
 
+      {/* Parent Event Badge */}
+      {parentEvent && (
+        <div className="rounded-lg border p-4 bg-blue-50/50 border-blue-200">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Child event of:</span>
+            <Link
+              href={`/events/${parentEvent.id}`}
+              className="font-medium text-blue-600 hover:underline flex items-center gap-1"
+            >
+              ↑ {parentEvent.eventName}
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Main details */}
         <div className="lg:col-span-2 space-y-6">
@@ -70,16 +85,6 @@ export default async function EventDetailPage({
           <div className="rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4">Event Details</h2>
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {parentEvent && (
-                <div className="md:col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground">Parent Event</dt>
-                  <dd className="text-sm mt-1">
-                    <Link href={`/events/${parentEvent.id}`} className="text-blue-600 hover:underline">
-                      {parentEvent.eventName}
-                    </Link>
-                  </dd>
-                </div>
-              )}
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Event Type</dt>
                 <dd className="text-sm mt-1">{event.eventType || "—"}</dd>
@@ -140,27 +145,45 @@ export default async function EventDetailPage({
           </div>
 
           {/* Child Events */}
-          {childEvents.length > 0 && (
-            <div className="rounded-lg border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Child Events ({childEvents.length})</h2>
+          <div className="rounded-lg border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Child Events ({childEvents.length})</h2>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/events/${params.id}/assign-child`}>Assign Existing</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href={`/events/new?parentEventId=${params.id}`}>Create New</Link>
+                </Button>
               </div>
+            </div>
+            {childEvents.length > 0 ? (
               <div className="space-y-2">
                 {childEvents.map((childEvent) => (
                   <Link
                     key={childEvent.id}
                     href={`/events/${childEvent.id}`}
-                    className="block p-3 rounded border hover:bg-muted/50"
+                    className="block p-3 rounded border hover:bg-muted/50 transition-colors"
                   >
-                    <div className="font-medium">{childEvent.eventName}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {childEvent.eventType || "No type"} • {childEvent.eventDateStart || "No date"}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium">{childEvent.eventName}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {childEvent.eventType || "No type"} • {childEvent.eventDateStart || "No date"}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">→</span>
                     </div>
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                <p>No child events yet</p>
+                <p className="text-xs mt-1">Click "Add Child Event" to create one</p>
+              </div>
+            )}
+          </div>
 
           {/* Sessions in this Event */}
           <div className="rounded-lg border p-6">

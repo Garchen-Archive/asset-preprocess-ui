@@ -43,6 +43,7 @@ export async function updateAsset(id: string, formData: FormData) {
     catalogedBy: formData.get("catalogedBy") as string || null,
     backedUpLocally: formData.get("backedUpLocally") === "on",
     safeToDeleteFromGdrive: formData.get("safeToDeleteFromGdrive") === "on",
+    removeFile: formData.get("removeFile") === "on",
     contributorOrg: formData.get("contributorOrg") as string || null,
     notes: formData.get("notes") as string || null,
 
@@ -74,7 +75,7 @@ export async function deleteAsset(id: string) {
 // EVENT ACTIONS
 // ============================================================================
 
-export async function createEvent(formData: FormData) {
+export async function createEvent(prevState: any, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
 
   const data = {
@@ -96,10 +97,25 @@ export async function createEvent(formData: FormData) {
     createdBy: formData.get("createdBy") as string || null,
   };
 
-  const [newEvent] = await db.insert(events).values(data).returning();
+  try {
+    const [newEvent] = await db.insert(events).values(data).returning();
 
-  revalidatePath("/events");
-  redirect(`/events/${newEvent.id}`);
+    revalidatePath("/events");
+    redirect(`/events/${newEvent.id}`);
+  } catch (error: any) {
+    // Log the full error to help debug
+    console.error('Create event error:', error);
+
+    // Check for unique constraint violation on event_id
+    if (error?.code === '23505') {
+      // Check if it's the event_id constraint
+      if (error?.constraint?.includes('event_id') || error?.detail?.includes('event_id')) {
+        return { error: `Event ID "${data.eventId}" already exists. Please use a different Event ID.` };
+      }
+      return { error: 'A duplicate value was found. Please check your input.' };
+    }
+    return { error: `An unexpected error occurred: ${error?.message || 'Please try again.'}` };
+  }
 }
 
 export async function updateEvent(id: string, formData: FormData) {
@@ -147,6 +163,16 @@ export async function deleteEvent(id: string) {
 
   revalidatePath("/events");
   redirect("/events");
+}
+
+export async function assignEventAsChild(eventId: string, parentEventId: string) {
+  await db
+    .update(events)
+    .set({ parentEventId: parentEventId })
+    .where(eq(events.id, eventId));
+
+  revalidatePath(`/events/${parentEventId}`);
+  redirect(`/events/${parentEventId}`);
 }
 
 // ============================================================================

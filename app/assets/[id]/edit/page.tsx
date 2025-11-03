@@ -53,7 +53,42 @@ export default async function AssetEditPage({
           >
             ← Back to Asset
           </Link>
-          <h1 className="text-3xl font-bold">Edit Asset</h1>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {(data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) && (
+                <a
+                  href={data.youtubeLink || data.gdriveUrl!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Watch on YouTube"
+                  className="text-red-600 hover:opacity-75 transition-opacity"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </a>
+              )}
+              {data.gdriveUrl && data.gdriveUrl.includes('drive.google.com') && (
+                <a
+                  href={data.gdriveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open in Google Drive"
+                  className="hover:opacity-75 transition-opacity"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold">Edit Asset</h1>
+          </div>
           <p className="text-muted-foreground">{data.name}</p>
         </div>
       </div>
@@ -371,10 +406,24 @@ export default async function AssetEditPage({
                   id="safeToDeleteFromGdrive"
                   name="safeToDeleteFromGdrive"
                   defaultChecked={data.safeToDeleteFromGdrive || false}
+                  disabled={data.assetType === 'youtube' || !!data.youtubeLink || (!!data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))}
+                  className={`h-4 w-4 rounded border-gray-300 ${(data.assetType === 'youtube' || data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                />
+                <Label htmlFor="safeToDeleteFromGdrive" className={`font-normal ${(data.assetType === 'youtube' || data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) ? 'text-muted-foreground/50' : ''}`}>
+                  Safe to Delete from GDrive {(data.assetType === 'youtube' || data.youtubeLink || (data.gdriveUrl && (data.gdriveUrl.includes('youtube.com') || data.gdriveUrl.includes('youtu.be')))) && '(N/A for YouTube)'}
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="removeFile"
+                  name="removeFile"
+                  defaultChecked={data.removeFile || false}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="safeToDeleteFromGdrive" className="font-normal">
-                  Safe to Delete from GDrive
+                <Label htmlFor="removeFile" className="font-normal">
+                  Remove File
                 </Label>
               </div>
             </div>
