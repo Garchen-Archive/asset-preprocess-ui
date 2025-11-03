@@ -11,7 +11,6 @@ export async function GET(
     const eventSessions = await db
       .select({
         id: sessions.id,
-        sessionId: sessions.sessionId,
         sessionName: sessions.sessionName,
         sessionDate: sessions.sessionDate,
         sequenceInEvent: sessions.sequenceInEvent,

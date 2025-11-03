@@ -37,7 +37,6 @@ export default async function EventsPage({
     conditions.push(
       or(
         ilike(events.eventName, `%${search}%`),
-        ilike(events.eventId, `%${search}%`),
         ilike(events.city, `%${search}%`),
         ilike(events.centerName, `%${search}%`)
       )

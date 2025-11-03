@@ -6,7 +6,6 @@ import type { Event } from "@/lib/db/schema";
 
 interface Session {
   id: string;
-  sessionId: string;
   sessionName: string;
   sessionDate: string | null;
   sequenceInEvent: number | null;

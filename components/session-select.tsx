@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 interface Session {
   id: string;
   sessionName: string;
-  sessionId: string;
   eventId: string | null;
 }
 
@@ -43,7 +42,6 @@ export function SessionSelect({
     return sessions.filter(
       ({ session, event }) =>
         session.sessionName.toLowerCase().includes(searchLower) ||
-        session.sessionId.toLowerCase().includes(searchLower) ||
         event?.eventName.toLowerCase().includes(searchLower)
     );
   }, [sessions, search]);
@@ -109,9 +107,6 @@ export function SessionSelect({
                   <div className="font-medium">{item.session.sessionName}</div>
                   <div className="text-xs text-muted-foreground">
                     {item.event && <span>{item.event.eventName}</span>}
-                  </div>
-                  <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                    {item.session.sessionId}
                   </div>
                 </div>
               ))

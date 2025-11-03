@@ -100,7 +100,6 @@ export type NewArchiveAsset = typeof archiveAssets.$inferInsert;
 // Events table
 export const events = pgTable("events", {
   id: uuid("id").defaultRandom().primaryKey(),
-  eventId: text("event_id").notNull().unique(),
   eventName: text("event_name").notNull(),
   eventDateStart: date("event_date_start", { mode: "string" }),
   eventDateEnd: date("event_date_end", { mode: "string" }),
@@ -131,7 +130,6 @@ export type NewEvent = typeof events.$inferInsert;
 // Sessions table (series layer removed - sessions now directly reference events)
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  sessionId: text("session_id").notNull().unique(),
   eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }), // Changed from series_id to event_id
   sessionName: text("session_name").notNull(),
   sessionDate: date("session_date", { mode: "string" }),

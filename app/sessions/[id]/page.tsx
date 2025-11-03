@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteSession } from "@/lib/actions";
 
@@ -58,7 +58,7 @@ export default async function SessionDetailPage({
     .where(eq(sessionCategories.sessionId, params.id));
 
   // Build breadcrumbs
-  const breadcrumbItems = [
+  const breadcrumbItems: BreadcrumbItem[] = [
     { label: "Events", href: "/events" },
   ];
 

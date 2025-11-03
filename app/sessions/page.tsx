@@ -30,10 +30,7 @@ export default async function SessionsPage({
 
   if (search) {
     conditions.push(
-      or(
-        ilike(sessions.sessionName, `%${search}%`),
-        ilike(sessions.sessionId, `%${search}%`)
-      )
+      ilike(sessions.sessionName, `%${search}%`)
     );
   }
 
