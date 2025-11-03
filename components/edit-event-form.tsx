@@ -1,55 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
-import { createEvent } from "@/lib/actions";
+import { updateEvent } from "@/lib/actions";
 import type { Event, Topic, Category } from "@/lib/db/schema";
 
-interface NewEventFormProps {
+interface EditEventFormProps {
+  event: Event;
   eventsList: Event[];
-  parentEventId?: string;
-  parentEvent?: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
+  selectedTopicIds: string[];
+  selectedCategoryIds: string[];
 }
 
-export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics, allCategories }: NewEventFormProps) {
-  const [state, formAction] = useFormState(createEvent, undefined);
-  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+export function EditEventForm({
+  event,
+  eventsList,
+  allTopics,
+  allCategories,
+  selectedTopicIds: initialTopicIds,
+  selectedCategoryIds: initialCategoryIds,
+}: EditEventFormProps) {
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(initialTopicIds);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategoryIds);
 
   return (
     <div className="space-y-6">
       <div>
         <Link
-          href={parentEventId ? `/events/${parentEventId}` : "/events"}
+          href={`/events/${event.id}`}
           className="text-sm text-muted-foreground hover:underline mb-2 inline-block"
         >
-          ← Back to {parentEvent ? parentEvent.eventName : "Events"}
+          ← Back to Event
         </Link>
-        <h1 className="text-3xl font-bold">
-          Create New {parentEvent ? "Child " : ""}Event
-        </h1>
-        {parentEvent && (
-          <p className="text-muted-foreground mt-2">
-            This will be a child event of <span className="font-medium">{parentEvent.eventName}</span>
-          </p>
-        )}
+        <h1 className="text-3xl font-bold">Edit Event</h1>
+        <p className="text-muted-foreground">{event.eventName}</p>
       </div>
 
-      {state?.error && (
-        <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-          <p className="text-sm text-destructive font-medium">{state.error}</p>
-        </div>
-      )}
-
-      <form action={formAction} className="space-y-8">
+      <form action={updateEvent.bind(null, event.id)} className="space-y-8">
         {/* Basic Information */}
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
@@ -60,7 +54,7 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
                 id="eventId"
                 name="eventId"
                 required
-                placeholder="e.g., 2024-summer-retreat"
+                defaultValue={event.eventId}
               />
             </div>
 
@@ -70,7 +64,7 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
                 id="eventName"
                 name="eventName"
                 required
-                placeholder="e.g., Summer Retreat 2024"
+                defaultValue={event.eventName}
               />
             </div>
 
@@ -79,7 +73,7 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               <select
                 id="parentEventId"
                 name="parentEventId"
-                defaultValue={parentEventId || ""}
+                defaultValue={event.parentEventId || ""}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">None (Top-level event)</option>
@@ -89,11 +83,6 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                {parentEvent
-                  ? `Creating a child event of "${parentEvent.eventName}"`
-                  : "Optional: Select a parent event to create a hierarchical structure"}
-              </p>
             </div>
 
             <div>
@@ -101,18 +90,28 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               <Input
                 id="eventType"
                 name="eventType"
-                placeholder="e.g., Retreat, Teaching, Empowerment"
+                defaultValue={event.eventType || ""}
               />
             </div>
 
             <div>
               <Label htmlFor="eventDateStart">Start Date</Label>
-              <Input id="eventDateStart" name="eventDateStart" type="date" />
+              <Input
+                id="eventDateStart"
+                name="eventDateStart"
+                type="date"
+                defaultValue={event.eventDateStart || ""}
+              />
             </div>
 
             <div>
               <Label htmlFor="eventDateEnd">End Date</Label>
-              <Input id="eventDateEnd" name="eventDateEnd" type="date" />
+              <Input
+                id="eventDateEnd"
+                name="eventDateEnd"
+                type="date"
+                defaultValue={event.eventDateEnd || ""}
+              />
             </div>
 
             <div className="md:col-span-2">
@@ -140,7 +139,7 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               <Textarea
                 id="eventDescription"
                 name="eventDescription"
-                placeholder="Event description"
+                defaultValue={event.eventDescription || ""}
                 rows={4}
               />
             </div>
@@ -156,23 +155,23 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               <Input
                 id="centerName"
                 name="centerName"
-                placeholder="e.g., Garchen Buddhist Institute"
+                defaultValue={event.centerName || ""}
               />
             </div>
 
             <div>
               <Label htmlFor="city">City</Label>
-              <Input id="city" name="city" placeholder="City" />
+              <Input id="city" name="city" defaultValue={event.city || ""} />
             </div>
 
             <div>
               <Label htmlFor="stateProvince">State/Province</Label>
-              <Input id="stateProvince" name="stateProvince" placeholder="State or Province" />
+              <Input id="stateProvince" name="stateProvince" defaultValue={event.stateProvince || ""} />
             </div>
 
             <div className="md:col-span-2">
               <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" placeholder="Country" />
+              <Input id="country" name="country" defaultValue={event.country || ""} />
             </div>
           </div>
         </div>
@@ -186,6 +185,7 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               <select
                 id="catalogingStatus"
                 name="catalogingStatus"
+                defaultValue={event.catalogingStatus || ""}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Not Started</option>
@@ -195,17 +195,12 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
               </select>
             </div>
 
-            <div>
-              <Label htmlFor="createdBy">Created By</Label>
-              <Input id="createdBy" name="createdBy" placeholder="Your name" />
-            </div>
-
             <div className="md:col-span-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                 name="notes"
-                placeholder="Additional notes"
+                defaultValue={event.notes || ""}
                 rows={4}
               />
             </div>
@@ -215,9 +210,9 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
         {/* Action Buttons */}
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" asChild>
-            <Link href="/events">Cancel</Link>
+            <Link href={`/events/${event.id}`}>Cancel</Link>
           </Button>
-          <Button type="submit">Create Event</Button>
+          <Button type="submit">Save Changes</Button>
         </div>
       </form>
     </div>

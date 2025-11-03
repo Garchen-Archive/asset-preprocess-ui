@@ -36,6 +36,9 @@ export default function RootLayout({
                   <a href="/assets" className="text-sm font-medium hover:underline">
                     Assets
                   </a>
+                  <a href="/taxonomy" className="text-sm font-medium hover:underline">
+                    Topics & Categories
+                  </a>
                   <div className="ml-4 pl-4 border-l">
                     <UserMenu />
                   </div>

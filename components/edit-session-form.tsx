@@ -7,33 +7,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
-import { createSession } from "@/lib/actions";
-import type { Event, Topic, Category } from "@/lib/db/schema";
+import { updateSession } from "@/lib/actions";
+import type { Session, Event, Topic, Category } from "@/lib/db/schema";
 
-interface NewSessionFormProps {
+interface EditSessionFormProps {
+  session: Session;
   eventsList: Event[];
-  defaultEventId?: string;
   allTopics: Topic[];
   allCategories: Category[];
+  selectedTopicIds: string[];
+  selectedCategoryIds: string[];
 }
 
-export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCategories }: NewSessionFormProps) {
-  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+export function EditSessionForm({
+  session,
+  eventsList,
+  allTopics,
+  allCategories,
+  selectedTopicIds: initialTopicIds,
+  selectedCategoryIds: initialCategoryIds,
+}: EditSessionFormProps) {
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(initialTopicIds);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategoryIds);
 
   return (
     <div className="space-y-6">
       <div>
         <Link
-          href="/sessions"
+          href={`/sessions/${session.id}`}
           className="text-sm text-muted-foreground hover:underline mb-2 inline-block"
         >
-          ← Back to Sessions
+          ← Back to Session
         </Link>
-        <h1 className="text-3xl font-bold">Create New Session</h1>
+        <h1 className="text-3xl font-bold">Edit Session</h1>
+        <p className="text-muted-foreground">{session.sessionName}</p>
       </div>
 
-      <form action={createSession} className="space-y-8">
+      <form action={updateSession.bind(null, session.id)} className="space-y-8">
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -43,7 +53,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
                 id="sessionId"
                 name="sessionId"
                 required
-                placeholder="e.g., session-01-intro"
+                defaultValue={session.sessionId}
               />
             </div>
 
@@ -53,7 +63,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
                 id="sessionName"
                 name="sessionName"
                 required
-                placeholder="e.g., Introduction to Bodhichitta"
+                defaultValue={session.sessionName}
               />
             </div>
 
@@ -62,7 +72,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
               <select
                 id="eventId"
                 name="eventId"
-                defaultValue={defaultEventId || ""}
+                defaultValue={session.eventId || ""}
                 required
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
@@ -77,24 +87,42 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
 
             <div>
               <Label htmlFor="sessionDate">Session Date</Label>
-              <Input id="sessionDate" name="sessionDate" type="date" />
+              <Input
+                id="sessionDate"
+                name="sessionDate"
+                type="date"
+                defaultValue={session.sessionDate || ""}
+              />
             </div>
 
             <div>
               <Label htmlFor="sessionTime">Session Time</Label>
-              <Input id="sessionTime" name="sessionTime" type="time" />
+              <Input
+                id="sessionTime"
+                name="sessionTime"
+                type="time"
+                defaultValue={session.sessionTime || ""}
+              />
             </div>
 
             <div>
               <Label htmlFor="sessionStartTime">Start Time</Label>
-              <Input id="sessionStartTime" name="sessionStartTime" type="time" />
-              <p className="text-xs text-muted-foreground mt-1">Optional: Specific start time</p>
+              <Input
+                id="sessionStartTime"
+                name="sessionStartTime"
+                type="time"
+                defaultValue={session.sessionStartTime || ""}
+              />
             </div>
 
             <div>
               <Label htmlFor="sessionEndTime">End Time</Label>
-              <Input id="sessionEndTime" name="sessionEndTime" type="time" />
-              <p className="text-xs text-muted-foreground mt-1">Optional: Specific end time</p>
+              <Input
+                id="sessionEndTime"
+                name="sessionEndTime"
+                type="time"
+                defaultValue={session.sessionEndTime || ""}
+              />
             </div>
 
             <div>
@@ -103,7 +131,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
                 id="sequenceInEvent"
                 name="sequenceInEvent"
                 type="number"
-                placeholder="1"
+                defaultValue={session.sequenceInEvent || ""}
               />
             </div>
 
@@ -112,6 +140,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
               <Input
                 id="durationEstimated"
                 name="durationEstimated"
+                defaultValue={session.durationEstimated || ""}
                 placeholder="e.g., 01:30:00"
               />
             </div>
@@ -121,6 +150,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
               <select
                 id="catalogingStatus"
                 name="catalogingStatus"
+                defaultValue={session.catalogingStatus || ""}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Not Started</option>
@@ -155,7 +185,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
               <Textarea
                 id="sessionDescription"
                 name="sessionDescription"
-                placeholder="Session description"
+                defaultValue={session.sessionDescription || ""}
                 rows={4}
               />
             </div>
@@ -165,7 +195,7 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
               <Textarea
                 id="notes"
                 name="notes"
-                placeholder="Additional notes"
+                defaultValue={session.notes || ""}
                 rows={3}
               />
             </div>
@@ -174,9 +204,9 @@ export function NewSessionForm({ eventsList, defaultEventId, allTopics, allCateg
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" asChild>
-            <Link href="/sessions">Cancel</Link>
+            <Link href={`/sessions/${session.id}`}>Cancel</Link>
           </Button>
-          <Button type="submit">Create Session</Button>
+          <Button type="submit">Save Changes</Button>
         </div>
       </form>
     </div>

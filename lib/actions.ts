@@ -89,8 +89,6 @@ export async function createEvent(prevState: { error: string } | undefined, form
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
-    category: formData.get("category") as string || null,
-    topic: formData.get("topic") as string || null,
     centerName: formData.get("centerName") as string || null,
     city: formData.get("city") as string || null,
     stateProvince: formData.get("stateProvince") as string || null,
@@ -156,6 +154,10 @@ export async function updateEvent(id: string, formData: FormData) {
 
   const parentEventIdStr = formData.get("parentEventId") as string;
 
+  // Extract topic and category IDs from form data
+  const topicIds = formData.getAll("topicIds") as string[];
+  const categoryIds = formData.getAll("categoryIds") as string[];
+
   const data = {
     eventId: formData.get("eventId") as string,
     eventName: formData.get("eventName") as string,
@@ -163,8 +165,6 @@ export async function updateEvent(id: string, formData: FormData) {
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
-    category: formData.get("category") as string || null,
-    topic: formData.get("topic") as string || null,
     centerName: formData.get("centerName") as string || null,
     city: formData.get("city") as string || null,
     stateProvince: formData.get("stateProvince") as string || null,
@@ -177,6 +177,30 @@ export async function updateEvent(id: string, formData: FormData) {
   };
 
   await db.update(events).set(data).where(eq(events.id, id));
+
+  // Delete existing junction table entries
+  await db.delete(eventTopics).where(eq(eventTopics.eventId, id));
+  await db.delete(eventCategories).where(eq(eventCategories.eventId, id));
+
+  // Create new junction table entries for topics
+  if (topicIds.length > 0) {
+    await db.insert(eventTopics).values(
+      topicIds.map(topicId => ({
+        eventId: id,
+        topicId: topicId,
+      }))
+    );
+  }
+
+  // Create new junction table entries for categories
+  if (categoryIds.length > 0) {
+    await db.insert(eventCategories).values(
+      categoryIds.map(categoryId => ({
+        eventId: id,
+        categoryId: categoryId,
+      }))
+    );
+  }
 
   revalidatePath(`/events/${id}`);
   redirect(`/events/${id}`);
@@ -217,8 +241,6 @@ export async function createSession(formData: FormData) {
     sessionStartTime: formData.get("sessionStartTime") as string || null,
     sessionEndTime: formData.get("sessionEndTime") as string || null,
     sequenceInEvent: formData.get("sequenceInEvent") ? parseInt(formData.get("sequenceInEvent") as string) : null,
-    topic: formData.get("topic") as string || null,
-    category: formData.get("category") as string || null,
     sessionDescription: formData.get("sessionDescription") as string || null,
     durationEstimated: formData.get("durationEstimated") as string || null,
     catalogingStatus: formData.get("catalogingStatus") as string || null,
@@ -263,6 +285,10 @@ export async function updateSession(id: string, formData: FormData) {
     }
   }
 
+  // Extract topic and category IDs from form data
+  const topicIds = formData.getAll("topicIds") as string[];
+  const categoryIds = formData.getAll("categoryIds") as string[];
+
   const data = {
     sessionId: formData.get("sessionId") as string,
     eventId: formData.get("eventId") as string || null,
@@ -272,8 +298,6 @@ export async function updateSession(id: string, formData: FormData) {
     sessionStartTime: formData.get("sessionStartTime") as string || null,
     sessionEndTime: formData.get("sessionEndTime") as string || null,
     sequenceInEvent: formData.get("sequenceInEvent") ? parseInt(formData.get("sequenceInEvent") as string) : null,
-    topic: formData.get("topic") as string || null,
-    category: formData.get("category") as string || null,
     sessionDescription: formData.get("sessionDescription") as string || null,
     durationEstimated: formData.get("durationEstimated") as string || null,
     catalogingStatus: formData.get("catalogingStatus") as string || null,
@@ -283,6 +307,30 @@ export async function updateSession(id: string, formData: FormData) {
   };
 
   await db.update(sessions).set(data).where(eq(sessions.id, id));
+
+  // Delete existing junction table entries
+  await db.delete(sessionTopics).where(eq(sessionTopics.sessionId, id));
+  await db.delete(sessionCategories).where(eq(sessionCategories.sessionId, id));
+
+  // Create new junction table entries for topics
+  if (topicIds.length > 0) {
+    await db.insert(sessionTopics).values(
+      topicIds.map(topicId => ({
+        sessionId: id,
+        topicId: topicId,
+      }))
+    );
+  }
+
+  // Create new junction table entries for categories
+  if (categoryIds.length > 0) {
+    await db.insert(sessionCategories).values(
+      categoryIds.map(categoryId => ({
+        sessionId: id,
+        categoryId: categoryId,
+      }))
+    );
+  }
 
   revalidatePath(`/sessions/${id}`);
   redirect(`/sessions/${id}`);
