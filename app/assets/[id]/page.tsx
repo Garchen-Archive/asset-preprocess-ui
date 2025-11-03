@@ -3,7 +3,7 @@ import { archiveAssets, sessions, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { DeleteAssetButton } from "@/components/delete-asset-button";
 
@@ -33,7 +33,7 @@ export default async function AssetDetailPage({
   const { asset: data, session, event } = assetData;
 
   // Build breadcrumbs
-  const breadcrumbItems = [
+  const breadcrumbItems: BreadcrumbItem[] = [
     { label: "Events", href: "/events" },
   ];
 
