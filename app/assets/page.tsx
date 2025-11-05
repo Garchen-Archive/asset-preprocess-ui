@@ -19,7 +19,7 @@ export default async function AssetsPage({
     source?: string;
     isMediaFile?: string;
     safeToDelete?: string;
-    removeFile?: string;
+    exclude?: string;
     formats?: string;
     sortBy?: string;
     sortOrder?: string;
@@ -32,7 +32,7 @@ export default async function AssetsPage({
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
   const safeToDeleteFilter = searchParams.safeToDelete || "";
-  const removeFileFilter = searchParams.removeFile || "";
+  const excludeFilter = searchParams.exclude || "";
   const formatsFilter = searchParams.formats || "";
   const selectedFormats = formatsFilter ? formatsFilter.split(',') : [];
   const sortBy = searchParams.sortBy || "createdAt";
@@ -86,11 +86,11 @@ export default async function AssetsPage({
     }
   }
 
-  if (removeFileFilter) {
-    if (removeFileFilter === "true") {
-      conditions.push(eq(archiveAssets.removeFile, true));
-    } else if (removeFileFilter === "false") {
-      conditions.push(eq(archiveAssets.removeFile, false));
+  if (excludeFilter) {
+    if (excludeFilter === "true") {
+      conditions.push(eq(archiveAssets.exclude, true));
+    } else if (excludeFilter === "false") {
+      conditions.push(eq(archiveAssets.exclude, false));
     }
   }
 
@@ -139,7 +139,7 @@ export default async function AssetsPage({
     .then(results => results.map(r => r.format).filter(Boolean) as string[]);
 
   // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !removeFileFilter && selectedFormats.length === 0;
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !excludeFilter && selectedFormats.length === 0;
   let stats = null;
 
   if (showStats) {
@@ -303,13 +303,13 @@ export default async function AssetsPage({
 
           <div>
             <select
-              name="removeFile"
-              defaultValue={removeFileFilter}
+              name="exclude"
+              defaultValue={excludeFilter}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">All (Remove File)</option>
-              <option value="true">Remove File</option>
-              <option value="false">Keep File</option>
+              <option value="">All (Exclude from Archive)</option>
+              <option value="true">Exclude from Archive</option>
+              <option value="false">Include in Archive</option>
             </select>
           </div>
         </div>
@@ -367,7 +367,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(removeFileFilter && { removeFile: removeFileFilter }),
+          ...(excludeFilter && { exclude: excludeFilter }),
           ...(formatsFilter && { formats: formatsFilter }),
         }}
       />
@@ -384,7 +384,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(removeFileFilter && { removeFile: removeFileFilter }),
+          ...(excludeFilter && { exclude: excludeFilter }),
           ...(formatsFilter && { formats: formatsFilter }),
         }}
       />

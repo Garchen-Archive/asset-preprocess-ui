@@ -43,7 +43,7 @@ export async function updateAsset(id: string, formData: FormData) {
     catalogedBy: formData.get("catalogedBy") as string || null,
     backedUpLocally: formData.get("backedUpLocally") === "on",
     safeToDeleteFromGdrive: formData.get("safeToDeleteFromGdrive") === "on",
-    removeFile: formData.get("removeFile") === "on",
+    exclude: formData.get("exclude") === "on",
     contributorOrg: formData.get("contributorOrg") as string || null,
     notes: formData.get("notes") as string || null,
 

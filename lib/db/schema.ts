@@ -46,7 +46,7 @@ export const archiveAssets = pgTable("archive_assets", {
   catalogingStatus: text("cataloging_status"),
   catalogedBy: text("cataloged_by"),
   catalogingDate: date("cataloging_date", { mode: "string" }),
-  removeFile: boolean("remove_file"),
+  exclude: boolean("exclude"),
   backedUpLocally: boolean("backed_up_locally"),
   safeToDeleteFromGdrive: boolean("safe_to_delete_from_gdrive"),
   notes: text("notes"),

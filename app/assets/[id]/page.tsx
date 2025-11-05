@@ -310,8 +310,8 @@ export default async function AssetDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Remove File</dt>
-                <dd className="text-sm mt-1">{data.removeFile ? "Yes" : "No"}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Exclude from Archive</dt>
+                <dd className="text-sm mt-1">{data.exclude ? "Yes" : "No"}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Contributor</dt>

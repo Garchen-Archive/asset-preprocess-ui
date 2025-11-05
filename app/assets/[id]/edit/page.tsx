@@ -417,13 +417,13 @@ export default async function AssetEditPage({
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="removeFile"
-                  name="removeFile"
-                  defaultChecked={data.removeFile || false}
+                  id="exclude"
+                  name="exclude"
+                  defaultChecked={data.exclude || false}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="removeFile" className="font-normal">
-                  Remove File
+                <Label htmlFor="exclude" className="font-normal">
+                  Exclude from Archive
                 </Label>
               </div>
             </div>
