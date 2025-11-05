@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
-import { events, sessions, topics, categories, eventTopics, eventCategories } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets } from "@/lib/db/schema";
+import { eq, sql, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,23 @@ export default async function EventDetailPage({
     .select()
     .from(sessions)
     .where(eq(sessions.eventId, params.id));
+
+  // Get all assets from all sessions in this event
+  const sessionIds = eventSessions.map(s => s.id);
+  const eventAssets = sessionIds.length > 0
+    ? await db
+        .select({
+          id: archiveAssets.id,
+          title: archiveAssets.title,
+          name: archiveAssets.name,
+          assetType: archiveAssets.assetType,
+          duration: archiveAssets.duration,
+          sessionId: archiveAssets.sessionId,
+          catalogingStatus: archiveAssets.catalogingStatus,
+        })
+        .from(archiveAssets)
+        .where(inArray(archiveAssets.sessionId, sessionIds))
+    : [];
 
   // Get parent event if exists
   const parentEvent = event.parentEventId
@@ -297,6 +314,44 @@ export default async function EventDetailPage({
               <p className="text-sm text-muted-foreground">No sessions yet.</p>
             )}
           </div>
+
+          {/* Assets from all Sessions in this Event */}
+          <div className="rounded-lg border p-6 bg-green-50/50">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">All Assets ({eventAssets.length})</h2>
+            </div>
+            {eventAssets.length > 0 ? (
+              <div className="space-y-2">
+                {eventAssets.map((asset) => {
+                  const session = eventSessions.find(s => s.id === asset.sessionId);
+                  return (
+                    <Link
+                      key={asset.id}
+                      href={`/assets/${asset.id}`}
+                      className="block p-3 rounded border hover:bg-muted/50 bg-white"
+                    >
+                      <div className="font-medium">{asset.title || asset.name || "Untitled"}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {asset.assetType || "Unknown type"} • {asset.duration || "No duration"}
+                        {session && (
+                          <span className="ml-2 text-xs">
+                            (Session: {session.sessionName})
+                          </span>
+                        )}
+                      </div>
+                      {asset.catalogingStatus && (
+                        <Badge variant="outline" className="mt-1 text-xs">
+                          {asset.catalogingStatus}
+                        </Badge>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No assets in any sessions yet.</p>
+            )}
+          </div>
         </div>
 
         {/* Right column - Sidebar */}
@@ -332,6 +387,10 @@ export default async function EventDetailPage({
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Session Count</dt>
                 <dd className="text-sm mt-1">{eventSessions.length}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Asset Count</dt>
+                <dd className="text-sm mt-1">{eventAssets.length}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Total Duration</dt>
