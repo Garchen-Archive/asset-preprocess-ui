@@ -25,7 +25,7 @@ export default async function EventsPage({
   const statusFilter = searchParams.status || "";
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
-  const viewFilter = searchParams.view || "top-level"; // Default to top-level events
+  const viewFilter = searchParams.view || "all"; // Default to all events
   const page = parseInt(searchParams.page || "1");
   const perPage = 50;
   const offset = (page - 1) * perPage;
@@ -267,7 +267,7 @@ export default async function EventsPage({
         basePath="/events"
         searchParams={{
           ...(search && { search }),
-          ...(viewFilter !== "top-level" && { view: viewFilter }),
+          ...(viewFilter !== "all" && { view: viewFilter }),
           ...(statusFilter && { status: statusFilter }),
           ...(typeFilter && { type: typeFilter }),
           ...(countryFilter && { country: countryFilter }),
