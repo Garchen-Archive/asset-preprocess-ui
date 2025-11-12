@@ -118,7 +118,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
   const startEdit = (category: Category) => {
     setEditingId(category.id);
     setEditingName(category.name);
-    setEditingType(category.type);
+    setEditingType(category.type as CategoryType);
   };
 
   const cancelEdit = () => {

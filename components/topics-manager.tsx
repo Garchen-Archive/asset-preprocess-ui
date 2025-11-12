@@ -118,7 +118,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
   const startEdit = (topic: Topic) => {
     setEditingId(topic.id);
     setEditingName(topic.name);
-    setEditingType(topic.type);
+    setEditingType(topic.type as TopicType);
   };
 
   const cancelEdit = () => {
