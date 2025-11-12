@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Category } from "@/lib/db/schema";
-import { TOPIC_CATEGORY_TYPES } from "@/lib/constants";
+import { CATEGORY_TYPES, type CategoryType } from "@/lib/constants";
 
 interface CategoriesManagerProps {
   initialCategories: Category[];
@@ -15,19 +15,19 @@ interface CategoriesManagerProps {
 export function CategoriesManager({ initialCategories }: CategoriesManagerProps) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState(TOPIC_CATEGORY_TYPES[0]);
+  const [newCategoryType, setNewCategoryType] = useState<CategoryType>(CATEGORY_TYPES[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [editingType, setEditingType] = useState("");
+  const [editingType, setEditingType] = useState<CategoryType | "">("");
   const [isCreating, setIsCreating] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(
-    new Set(TOPIC_CATEGORY_TYPES)
+    new Set(CATEGORY_TYPES)
   );
 
   // Group categories by type
   const categoriesByType = useMemo(() => {
     const grouped = new Map<string, Category[]>();
-    TOPIC_CATEGORY_TYPES.forEach(type => grouped.set(type, []));
+    CATEGORY_TYPES.forEach(type => grouped.set(type, []));
 
     categories.forEach(category => {
       const existing = grouped.get(category.type) || [];
@@ -62,7 +62,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
         const newCategory = await response.json();
         setCategories([...categories, newCategory].sort((a, b) => a.name.localeCompare(b.name)));
         setNewCategoryName("");
-        setNewCategoryType(TOPIC_CATEGORY_TYPES[0]);
+        setNewCategoryType(CATEGORY_TYPES[0]);
       }
     } catch (error) {
       console.error("Failed to create category:", error);
@@ -149,7 +149,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
             onChange={(e) => setNewCategoryType(e.target.value)}
             className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm min-w-[180px]"
           >
-            {TOPIC_CATEGORY_TYPES.map((type) => (
+            {CATEGORY_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -173,7 +173,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
           </div>
         ) : (
           <div>
-            {TOPIC_CATEGORY_TYPES.map((type) => {
+            {CATEGORY_TYPES.map((type) => {
               const typeCategories = categoriesByType.get(type) || [];
               const isExpanded = expandedTypes.has(type);
 
@@ -229,7 +229,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
                                   onChange={(e) => setEditingType(e.target.value)}
                                   className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[160px]"
                                 >
-                                  {TOPIC_CATEGORY_TYPES.map((t) => (
+                                  {CATEGORY_TYPES.map((t) => (
                                     <option key={t} value={t}>
                                       {t}
                                     </option>

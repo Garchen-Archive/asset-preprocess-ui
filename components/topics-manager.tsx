@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Topic } from "@/lib/db/schema";
-import { TOPIC_CATEGORY_TYPES } from "@/lib/constants";
+import { TOPIC_TYPES, type TopicType } from "@/lib/constants";
 
 interface TopicsManagerProps {
   initialTopics: Topic[];
@@ -15,19 +15,19 @@ interface TopicsManagerProps {
 export function TopicsManager({ initialTopics }: TopicsManagerProps) {
   const [topics, setTopics] = useState<Topic[]>(initialTopics);
   const [newTopicName, setNewTopicName] = useState("");
-  const [newTopicType, setNewTopicType] = useState(TOPIC_CATEGORY_TYPES[0]);
+  const [newTopicType, setNewTopicType] = useState<TopicType>(TOPIC_TYPES[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [editingType, setEditingType] = useState("");
+  const [editingType, setEditingType] = useState<TopicType | "">("");
   const [isCreating, setIsCreating] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(
-    new Set(TOPIC_CATEGORY_TYPES)
+    new Set(TOPIC_TYPES)
   );
 
   // Group topics by type
   const topicsByType = useMemo(() => {
     const grouped = new Map<string, Topic[]>();
-    TOPIC_CATEGORY_TYPES.forEach(type => grouped.set(type, []));
+    TOPIC_TYPES.forEach(type => grouped.set(type, []));
 
     topics.forEach(topic => {
       const existing = grouped.get(topic.type) || [];
@@ -62,7 +62,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
         const newTopic = await response.json();
         setTopics([...topics, newTopic].sort((a, b) => a.name.localeCompare(b.name)));
         setNewTopicName("");
-        setNewTopicType(TOPIC_CATEGORY_TYPES[0]);
+        setNewTopicType(TOPIC_TYPES[0]);
       }
     } catch (error) {
       console.error("Failed to create topic:", error);
@@ -149,7 +149,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
             onChange={(e) => setNewTopicType(e.target.value)}
             className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm min-w-[180px]"
           >
-            {TOPIC_CATEGORY_TYPES.map((type) => (
+            {TOPIC_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -173,7 +173,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
           </div>
         ) : (
           <div>
-            {TOPIC_CATEGORY_TYPES.map((type) => {
+            {TOPIC_TYPES.map((type) => {
               const typeTopics = topicsByType.get(type) || [];
               const isExpanded = expandedTypes.has(type);
 
@@ -229,7 +229,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
                                   onChange={(e) => setEditingType(e.target.value)}
                                   className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[160px]"
                                 >
-                                  {TOPIC_CATEGORY_TYPES.map((t) => (
+                                  {TOPIC_TYPES.map((t) => (
                                     <option key={t} value={t}>
                                       {t}
                                     </option>

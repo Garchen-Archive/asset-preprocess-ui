@@ -1,6 +1,5 @@
-// Topic and Category Types
-// These are the allowed values for the type field in topics and categories tables
-export const TOPIC_CATEGORY_TYPES = [
+// Topic Types
+export const TOPIC_TYPES = [
   "Deities",
   "Practices",
   "Core Teachings",
@@ -8,4 +7,11 @@ export const TOPIC_CATEGORY_TYPES = [
   "Historical Figures",
 ] as const;
 
-export type TopicCategoryType = typeof TOPIC_CATEGORY_TYPES[number];
+export type TopicType = typeof TOPIC_TYPES[number];
+
+// Category Types
+export const CATEGORY_TYPES = [
+  "Core Teachings",
+] as const;
+
+export type CategoryType = typeof CATEGORY_TYPES[number];
