@@ -4,15 +4,19 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json();
+    const { name, type } = await request.json();
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
+    if (!type || !type.trim()) {
+      return NextResponse.json({ error: "Type is required" }, { status: 400 });
+    }
+
     const [newTopic] = await db
       .insert(topics)
-      .values({ name: name.trim() })
+      .values({ name: name.trim(), type: type.trim() })
       .returning();
 
     return NextResponse.json(newTopic);

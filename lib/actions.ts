@@ -340,10 +340,10 @@ export async function deleteSession(id: string) {
 // TOPICS AND CATEGORIES ACTIONS
 // ============================================================================
 
-export async function createTopic(name: string) {
+export async function createTopic(name: string, type: string) {
   const [topic] = await db
     .insert(topics)
-    .values({ name: name.trim() })
+    .values({ name: name.trim(), type })
     .returning();
 
   revalidatePath("/events");
@@ -351,10 +351,10 @@ export async function createTopic(name: string) {
   return topic;
 }
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, type: string) {
   const [category] = await db
     .insert(categories)
-    .values({ name: name.trim() })
+    .values({ name: name.trim(), type })
     .returning();
 
   revalidatePath("/events");
