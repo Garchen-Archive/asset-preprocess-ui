@@ -146,7 +146,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
           />
           <select
             value={newTopicType}
-            onChange={(e) => setNewTopicType(e.target.value)}
+            onChange={(e) => setNewTopicType(e.target.value as TopicType)}
             className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm min-w-[180px]"
           >
             {TOPIC_TYPES.map((type) => (
@@ -226,7 +226,7 @@ export function TopicsManager({ initialTopics }: TopicsManagerProps) {
                                 />
                                 <select
                                   value={editingType}
-                                  onChange={(e) => setEditingType(e.target.value)}
+                                  onChange={(e) => setEditingType(e.target.value as TopicType)}
                                   className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[160px]"
                                 >
                                   {TOPIC_TYPES.map((t) => (

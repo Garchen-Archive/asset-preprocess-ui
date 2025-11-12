@@ -146,7 +146,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
           />
           <select
             value={newCategoryType}
-            onChange={(e) => setNewCategoryType(e.target.value)}
+            onChange={(e) => setNewCategoryType(e.target.value as CategoryType)}
             className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm min-w-[180px]"
           >
             {CATEGORY_TYPES.map((type) => (
@@ -226,7 +226,7 @@ export function CategoriesManager({ initialCategories }: CategoriesManagerProps)
                                 />
                                 <select
                                   value={editingType}
-                                  onChange={(e) => setEditingType(e.target.value)}
+                                  onChange={(e) => setEditingType(e.target.value as CategoryType)}
                                   className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm min-w-[160px]"
                                 >
                                   {CATEGORY_TYPES.map((t) => (
