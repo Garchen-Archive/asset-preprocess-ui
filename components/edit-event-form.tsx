@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
 import { updateEvent } from "@/lib/actions";
-import type { Event, Topic, Category } from "@/lib/db/schema";
+import type { Event, Topic, Category, Location } from "@/lib/db/schema";
 
 interface EditEventFormProps {
   event: Event;
@@ -16,6 +16,7 @@ interface EditEventFormProps {
   parentEvent: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
+  allLocations: Location[];
   selectedTopicIds: string[];
   selectedCategoryIds: string[];
 }
@@ -26,6 +27,7 @@ export function EditEventForm({
   parentEvent,
   allTopics,
   allCategories,
+  allLocations,
   selectedTopicIds: initialTopicIds,
   selectedCategoryIds: initialCategoryIds,
 }: EditEventFormProps) {
@@ -141,78 +143,25 @@ export function EditEventForm({
         {/* Location */}
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Location</h2>
-          {parentEvent && (
-            <div className="mb-4 p-3 rounded-md bg-blue-50/50 border border-blue-200">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                Inherited from parent event (if fields below are empty):
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {parentEvent.centerName && (
-                  <div>
-                    <span className="text-muted-foreground">Center:</span>{" "}
-                    <span className="italic">{parentEvent.centerName}</span>
-                  </div>
-                )}
-                {parentEvent.city && (
-                  <div>
-                    <span className="text-muted-foreground">City:</span>{" "}
-                    <span className="italic">{parentEvent.city}</span>
-                  </div>
-                )}
-                {parentEvent.stateProvince && (
-                  <div>
-                    <span className="text-muted-foreground">State/Province:</span>{" "}
-                    <span className="italic">{parentEvent.stateProvince}</span>
-                  </div>
-                )}
-                {parentEvent.country && (
-                  <div>
-                    <span className="text-muted-foreground">Country:</span>{" "}
-                    <span className="italic">{parentEvent.country}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="centerName">Center Name</Label>
-              <Input
-                id="centerName"
-                name="centerName"
-                defaultValue={event.centerName || ""}
-                placeholder={parentEvent?.centerName || ""}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                name="city"
-                defaultValue={event.city || ""}
-                placeholder={parentEvent?.city || ""}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="stateProvince">State/Province</Label>
-              <Input
-                id="stateProvince"
-                name="stateProvince"
-                defaultValue={event.stateProvince || ""}
-                placeholder={parentEvent?.stateProvince || ""}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                name="country"
-                defaultValue={event.country || ""}
-                placeholder={parentEvent?.country || ""}
-              />
+              <Label htmlFor="locationId">Location</Label>
+              <select
+                id="locationId"
+                name="locationId"
+                defaultValue={event.locationId || ""}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select a location...</option>
+                {allLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name} ({location.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select from existing locations. <Link href="/locations/new" className="text-blue-600 hover:underline">Create new location</Link> if needed.
+              </p>
             </div>
           </div>
         </div>

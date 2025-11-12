@@ -27,6 +27,7 @@ type Asset = {
   fileFormat: string | null;
   bitrate: string | null;
   sampleRate: string | null;
+  createdDate: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;
   sourceUpdatedAt: Date | null;
@@ -38,6 +39,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "type", label: "Type", visible: true },
   { key: "status", label: "Status", visible: true },
   { key: "source", label: "Source", visible: true },
+  { key: "createdDate", label: "Asset Created Date", visible: true },
   { key: "duration", label: "Duration", visible: false },
   { key: "fileSize", label: "File Size", visible: false },
   { key: "category", label: "Category", visible: false },
@@ -51,9 +53,9 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "fileFormat", label: "File Format", visible: false },
   { key: "bitrate", label: "Bitrate", visible: false },
   { key: "sampleRate", label: "Sample Rate", visible: false },
-  { key: "createdAt", label: "Created At", visible: false },
-  { key: "updatedAt", label: "Updated At", visible: false },
-  { key: "sourceUpdatedAt", label: "Source Updated", visible: false },
+  { key: "createdAt", label: "System Created At", visible: false },
+  { key: "updatedAt", label: "System Updated At", visible: false },
+  { key: "sourceUpdatedAt", label: "Source Updated At", visible: false },
 ];
 
 type AssetsTableProps = {
@@ -134,6 +136,9 @@ export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = 
               )}
               {isColumnVisible("source") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
+              )}
+              {isColumnVisible("createdDate") && (
+                <SortableHeader column="createdDate">Asset Created Date</SortableHeader>
               )}
               {isColumnVisible("duration") && (
                 <SortableHeader column="duration">Duration</SortableHeader>
@@ -225,6 +230,13 @@ export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = 
                 {isColumnVisible("source") && (
                   <td className="px-4 py-3 text-sm capitalize">
                     {asset.metadataSource}
+                  </td>
+                )}
+                {isColumnVisible("createdDate") && (
+                  <td className="px-4 py-3 text-sm">
+                    {asset.createdDate
+                      ? new Date(asset.createdDate).toLocaleDateString()
+                      : "—"}
                   </td>
                 )}
                 {isColumnVisible("duration") && (

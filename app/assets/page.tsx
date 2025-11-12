@@ -114,6 +114,7 @@ export default async function AssetsPage({
     title: archiveAssets.title,
     duration: archiveAssets.duration,
     fileSizeMb: archiveAssets.fileSizeMb,
+    createdDate: archiveAssets.createdDate,
     createdAt: archiveAssets.createdAt,
     updatedAt: archiveAssets.updatedAt,
     deletedAt: archiveAssets.deletedAt,

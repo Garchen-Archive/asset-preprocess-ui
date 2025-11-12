@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, topics, categories } from "@/lib/db/schema";
+import { events, topics, categories, locations } from "@/lib/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { NewEventForm } from "@/components/new-event-form";
 
@@ -13,6 +13,7 @@ export default async function NewEventPage({
   const eventsList = await db.select().from(events).orderBy(asc(events.eventName));
   const allTopics = await db.select().from(topics).orderBy(asc(topics.name));
   const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
+  const allLocations = await db.select().from(locations).orderBy(asc(locations.name));
 
   // If parentEventId is provided, fetch the parent event for display
   const parentEventId = searchParams.parentEventId;
@@ -27,6 +28,7 @@ export default async function NewEventPage({
       parentEvent={parentEvent}
       allTopics={allTopics}
       allCategories={allCategories}
+      allLocations={allLocations}
     />
   );
 }

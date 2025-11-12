@@ -105,12 +105,9 @@ export const events = pgTable("events", {
   eventDateEnd: date("event_date_end", { mode: "string" }),
   eventType: text("event_type"),
   parentEventId: uuid("parent_event_id").references((): any => events.id, { onDelete: "set null" }), // Self-referential
+  locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
   category: text("category"), // Comma-delimited categories
   topic: text("topic"), // Comma-delimited topics
-  centerName: text("center_name"),
-  city: text("city"),
-  stateProvince: text("state_province"),
-  country: text("country"),
   eventDescription: text("event_description"),
   totalDuration: text("total_duration"),
   catalogingStatus: text("cataloging_status"),
@@ -263,3 +260,30 @@ export const sessionCategories = pgTable("session_categories", {
 
 export type SessionCategory = typeof sessionCategories.$inferSelect;
 export type NewSessionCategory = typeof sessionCategories.$inferInsert;
+
+// ============================================================================
+// LOCATIONS
+// ============================================================================
+
+export const locations = pgTable("locations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  alternativeNames: text("alternative_names").array(),
+  city: text("city"),
+  stateProvince: text("state_province"),
+  country: text("country"),
+  postalCode: text("postal_code"),
+  fullAddress: text("full_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  locationType: text("location_type"),
+  description: text("description"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;

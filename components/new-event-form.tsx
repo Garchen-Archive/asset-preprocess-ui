@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
 import { createEvent } from "@/lib/actions";
-import type { Event, Topic, Category } from "@/lib/db/schema";
+import type { Event, Topic, Category, Location } from "@/lib/db/schema";
 
 interface NewEventFormProps {
   eventsList: Event[];
@@ -17,9 +17,10 @@ interface NewEventFormProps {
   parentEvent?: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
+  allLocations: Location[];
 }
 
-export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics, allCategories }: NewEventFormProps) {
+export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics, allCategories, allLocations }: NewEventFormProps) {
   const [state, formAction] = useFormState(createEvent, undefined);
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
@@ -142,27 +143,22 @@ export function NewEventForm({ eventsList, parentEventId, parentEvent, allTopics
           <h2 className="text-xl font-semibold mb-4">Location</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="centerName">Center Name</Label>
-              <Input
-                id="centerName"
-                name="centerName"
-                placeholder="e.g., Garchen Buddhist Institute"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input id="city" name="city" placeholder="City" />
-            </div>
-
-            <div>
-              <Label htmlFor="stateProvince">State/Province</Label>
-              <Input id="stateProvince" name="stateProvince" placeholder="State or Province" />
-            </div>
-
-            <div className="md:col-span-2">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" placeholder="Country" />
+              <Label htmlFor="locationId">Location</Label>
+              <select
+                id="locationId"
+                name="locationId"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select a location...</option>
+                {allLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name} ({location.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select from existing locations. <Link href="/locations/new" className="text-blue-600 hover:underline">Create new location</Link> if needed.
+              </p>
             </div>
           </div>
         </div>

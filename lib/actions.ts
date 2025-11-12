@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db/client";
-import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories } from "@/lib/db/schema";
+import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -77,6 +77,7 @@ export async function deleteAsset(id: string) {
 
 export async function createEvent(prevState: { error: string } | undefined, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
+  const locationIdStr = formData.get("locationId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -85,13 +86,10 @@ export async function createEvent(prevState: { error: string } | undefined, form
   const data = {
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
+    locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
-    centerName: formData.get("centerName") as string || null,
-    city: formData.get("city") as string || null,
-    stateProvince: formData.get("stateProvince") as string || null,
-    country: formData.get("country") as string || null,
     eventDescription: formData.get("eventDescription") as string || null,
     catalogingStatus: formData.get("catalogingStatus") as string || null,
     notes: formData.get("notes") as string || null,
@@ -153,6 +151,7 @@ export async function updateEvent(id: string, formData: FormData) {
   }
 
   const parentEventIdStr = formData.get("parentEventId") as string;
+  const locationIdStr = formData.get("locationId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -161,13 +160,10 @@ export async function updateEvent(id: string, formData: FormData) {
   const data = {
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
+    locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
-    centerName: formData.get("centerName") as string || null,
-    city: formData.get("city") as string || null,
-    stateProvince: formData.get("stateProvince") as string || null,
-    country: formData.get("country") as string || null,
     eventDescription: formData.get("eventDescription") as string || null,
     catalogingStatus: formData.get("catalogingStatus") as string || null,
     notes: formData.get("notes") as string || null,
@@ -364,4 +360,72 @@ export async function createCategory(name: string) {
   revalidatePath("/events");
   revalidatePath("/sessions");
   return category;
+}
+
+// ============================================================================
+// LOCATION ACTIONS
+// ============================================================================
+
+export async function createLocation(formData: FormData) {
+  const alternativeNamesStr = formData.get("alternativeNames") as string;
+  const alternativeNames = alternativeNamesStr
+    ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
+    : null;
+
+  const data = {
+    code: formData.get("code") as string,
+    name: formData.get("name") as string,
+    alternativeNames,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    locationType: formData.get("locationType") as string || null,
+    description: formData.get("description") as string || null,
+    notes: formData.get("notes") as string || null,
+  };
+
+  const [newLocation] = await db.insert(locations).values(data).returning();
+
+  revalidatePath("/locations");
+  redirect(`/locations/${newLocation.id}`);
+}
+
+export async function updateLocation(id: string, formData: FormData) {
+  const alternativeNamesStr = formData.get("alternativeNames") as string;
+  const alternativeNames = alternativeNamesStr
+    ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
+    : null;
+
+  const data = {
+    code: formData.get("code") as string,
+    name: formData.get("name") as string,
+    alternativeNames,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    locationType: formData.get("locationType") as string || null,
+    description: formData.get("description") as string || null,
+    notes: formData.get("notes") as string || null,
+    updatedAt: new Date(),
+  };
+
+  await db.update(locations).set(data).where(eq(locations.id, id));
+
+  revalidatePath(`/locations/${id}`);
+  redirect(`/locations/${id}`);
+}
+
+export async function deleteLocation(id: string) {
+  await db.delete(locations).where(eq(locations.id, id));
+
+  revalidatePath("/locations");
+  redirect("/locations");
 }

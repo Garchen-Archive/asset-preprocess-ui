@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets } from "@/lib/db/schema";
+import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets, locations } from "@/lib/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,16 @@ export default async function EventDetailPage({
         .from(archiveAssets)
         .where(inArray(archiveAssets.sessionId, sessionIds))
     : [];
+
+  // Get location if exists
+  const location = event.locationId
+    ? await db
+        .select()
+        .from(locations)
+        .where(eq(locations.id, event.locationId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
 
   // Get parent event if exists
   const parentEvent = event.parentEventId
@@ -191,58 +201,33 @@ export default async function EventDetailPage({
           {/* Location */}
           <div className="rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4">Location</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Center Name</dt>
-                <dd className="text-sm mt-1">
-                  {event.centerName || (parentEvent?.centerName ? (
-                    <span className="text-muted-foreground italic flex items-center gap-1">
-                      <span className="text-xs">↑</span>
-                      {parentEvent.centerName}
-                    </span>
-                  ) : "—")}
-                </dd>
+            {location ? (
+              <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1">
+                      <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
+                        {location.name}
+                      </Link>
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
+                    {location.city && location.country && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {location.city}, {location.country}
+                      </p>
+                    )}
+                  </div>
+                  {location.locationType && (
+                    <Badge variant="secondary" className="text-xs">
+                      {location.locationType}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">City</dt>
-                <dd className="text-sm mt-1">
-                  {event.city || (parentEvent?.city ? (
-                    <span className="text-muted-foreground italic flex items-center gap-1">
-                      <span className="text-xs">↑</span>
-                      {parentEvent.city}
-                    </span>
-                  ) : "—")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
-                <dd className="text-sm mt-1">
-                  {event.stateProvince || (parentEvent?.stateProvince ? (
-                    <span className="text-muted-foreground italic flex items-center gap-1">
-                      <span className="text-xs">↑</span>
-                      {parentEvent.stateProvince}
-                    </span>
-                  ) : "—")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Country</dt>
-                <dd className="text-sm mt-1">
-                  {event.country || (parentEvent?.country ? (
-                    <span className="text-muted-foreground italic flex items-center gap-1">
-                      <span className="text-xs">↑</span>
-                      {parentEvent.country}
-                    </span>
-                  ) : "—")}
-                </dd>
-              </div>
-            </dl>
-            {parentEvent && !event.centerName && !event.city && !event.stateProvince && !event.country && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground italic">
-                  Location inherited from parent event
-                </p>
-              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No location assigned. <Link href={`/events/${params.id}/edit`} className="text-blue-600 hover:underline">Edit event</Link> to add one.
+              </p>
             )}
           </div>
 

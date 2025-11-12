@@ -36,6 +36,9 @@ export default function RootLayout({
                   <a href="/assets" className="text-sm font-medium hover:underline">
                     Assets
                   </a>
+                  <a href="/locations" className="text-sm font-medium hover:underline">
+                    Locations
+                  </a>
                   <a href="/taxonomy" className="text-sm font-medium hover:underline">
                     Topics & Categories
                   </a>
