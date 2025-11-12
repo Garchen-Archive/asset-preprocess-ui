@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { sessions, archiveAssets, events, topics, categories, sessionTopics, sessionCategories } from "@/lib/db/schema";
+import { sessions, archiveAssets, events, topics, categories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,16 @@ export default async function SessionDetailPage({
   }
 
   const { session, event } = sessionData;
+
+  // Get location if event has one
+  const location = event?.locationId
+    ? await db
+        .select()
+        .from(locations)
+        .where(eq(locations.id, event.locationId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
 
   // Get assets in this session
   const sessionAssets = await db
@@ -173,57 +183,48 @@ export default async function SessionDetailPage({
           {event && (
             <div className="rounded-lg border p-6">
               <h2 className="text-xl font-semibold mb-4">Location</h2>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {location ? (
                 <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Center Name</dt>
-                  <dd className="text-sm mt-1">
-                    {event.centerName ? (
-                      <span className="text-muted-foreground italic flex items-center gap-1">
-                        <span className="text-xs">↑</span>
-                        {event.centerName}
-                      </span>
-                    ) : "—"}
-                  </dd>
+                  <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium mb-1">
+                          <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
+                            {location.name}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
+                        {location.city && location.country && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {location.city}, {location.country}
+                          </p>
+                        )}
+                      </div>
+                      {location.locationType && (
+                        <Badge variant="secondary" className="text-xs">
+                          {location.locationType}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic">
+                      Location from event: <Link href={`/events/${event.id}`} className="hover:underline text-blue-600">{event.eventName}</Link>
+                    </p>
+                  </div>
                 </div>
+              ) : (
                 <div>
-                  <dt className="text-sm font-medium text-muted-foreground">City</dt>
-                  <dd className="text-sm mt-1">
-                    {event.city ? (
-                      <span className="text-muted-foreground italic flex items-center gap-1">
-                        <span className="text-xs">↑</span>
-                        {event.city}
-                      </span>
-                    ) : "—"}
-                  </dd>
+                  <p className="text-sm text-muted-foreground">
+                    No location assigned to parent event.
+                  </p>
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic">
+                      Parent event: <Link href={`/events/${event.id}`} className="hover:underline text-blue-600">{event.eventName}</Link>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
-                  <dd className="text-sm mt-1">
-                    {event.stateProvince ? (
-                      <span className="text-muted-foreground italic flex items-center gap-1">
-                        <span className="text-xs">↑</span>
-                        {event.stateProvince}
-                      </span>
-                    ) : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Country</dt>
-                  <dd className="text-sm mt-1">
-                    {event.country ? (
-                      <span className="text-muted-foreground italic flex items-center gap-1">
-                        <span className="text-xs">↑</span>
-                        {event.country}
-                      </span>
-                    ) : "—"}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground italic">
-                  Location inherited from event: <Link href={`/events/${event.id}`} className="hover:underline text-blue-600">{event.eventName}</Link>
-                </p>
-              </div>
+              )}
             </div>
           )}
 

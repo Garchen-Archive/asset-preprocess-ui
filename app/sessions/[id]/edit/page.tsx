@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { sessions, events, topics, categories, sessionTopics, sessionCategories } from "@/lib/db/schema";
+import { sessions, events, topics, categories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { EditSessionForm } from "@/components/edit-session-form";
@@ -27,6 +27,16 @@ export default async function EditSessionPage({
 
   const { session: sessionRecord, event: sessionEvent } = sessionData;
 
+  // Get location if event has one
+  const location = sessionEvent?.locationId
+    ? await db
+        .select()
+        .from(locations)
+        .where(eq(locations.id, sessionEvent.locationId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
+
   const eventsList = await db.select().from(events).orderBy(asc(events.eventName));
 
   // Get all topics and categories
@@ -52,6 +62,7 @@ export default async function EditSessionPage({
       session={sessionRecord}
       eventsList={eventsList}
       sessionEvent={sessionEvent}
+      location={location}
       allTopics={allTopics}
       allCategories={allCategories}
       selectedTopicIds={selectedSessionTopics.map(t => t.id)}

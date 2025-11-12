@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
 import { updateSession } from "@/lib/actions";
-import type { Session, Event, Topic, Category } from "@/lib/db/schema";
+import type { Session, Event, Topic, Category, Location } from "@/lib/db/schema";
 
 interface EditSessionFormProps {
   session: Session;
   eventsList: Event[];
   sessionEvent: Event | null;
+  location: Location | null;
   allTopics: Topic[];
   allCategories: Category[];
   selectedTopicIds: string[];
@@ -24,6 +26,7 @@ export function EditSessionForm({
   session,
   eventsList,
   sessionEvent,
+  location,
   allTopics,
   allCategories,
   selectedTopicIds: initialTopicIds,
@@ -199,34 +202,36 @@ export function EditSessionForm({
           <div className="rounded-lg border p-6 bg-muted/30">
             <h2 className="text-xl font-semibold mb-2">Location</h2>
             <p className="text-xs text-muted-foreground italic mb-4">
-              Inherited from event: {sessionEvent.eventName}
+              Inherited from event: <Link href={`/events/${sessionEvent.id}`} className="text-blue-600 hover:underline">{sessionEvent.eventName}</Link>
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {sessionEvent.centerName && (
-                <div>
-                  <span className="text-muted-foreground font-medium">Center:</span>{" "}
-                  <span className="italic">{sessionEvent.centerName}</span>
+            {location ? (
+              <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1">
+                      <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
+                        {location.name}
+                      </Link>
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
+                    {location.city && location.country && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {location.city}, {location.country}
+                      </p>
+                    )}
+                  </div>
+                  {location.locationType && (
+                    <Badge variant="secondary" className="text-xs">
+                      {location.locationType}
+                    </Badge>
+                  )}
                 </div>
-              )}
-              {sessionEvent.city && (
-                <div>
-                  <span className="text-muted-foreground font-medium">City:</span>{" "}
-                  <span className="italic">{sessionEvent.city}</span>
-                </div>
-              )}
-              {sessionEvent.stateProvince && (
-                <div>
-                  <span className="text-muted-foreground font-medium">State/Province:</span>{" "}
-                  <span className="italic">{sessionEvent.stateProvince}</span>
-                </div>
-              )}
-              {sessionEvent.country && (
-                <div>
-                  <span className="text-muted-foreground font-medium">Country:</span>{" "}
-                  <span className="italic">{sessionEvent.country}</span>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No location assigned to parent event.
+              </p>
+            )}
           </div>
         )}
 
