@@ -16,7 +16,6 @@ export default async function EventsPage({
     search?: string;
     status?: string;
     type?: string;
-    country?: string;
     view?: string;
     page?: string;
   };
@@ -24,7 +23,6 @@ export default async function EventsPage({
   const search = searchParams.search || "";
   const statusFilter = searchParams.status || "";
   const typeFilter = searchParams.type || "";
-  const countryFilter = searchParams.country || "";
   const viewFilter = searchParams.view || "all"; // Default to all events
   const page = parseInt(searchParams.page || "1");
   const perPage = 50;
@@ -35,11 +33,7 @@ export default async function EventsPage({
 
   if (search) {
     conditions.push(
-      or(
-        ilike(events.eventName, `%${search}%`),
-        ilike(events.city, `%${search}%`),
-        ilike(events.centerName, `%${search}%`)
-      )
+      ilike(events.eventName, `%${search}%`)
     );
   }
 
@@ -55,9 +49,6 @@ export default async function EventsPage({
     conditions.push(eq(events.eventType, typeFilter));
   }
 
-  if (countryFilter) {
-    conditions.push(eq(events.country, countryFilter));
-  }
 
   // Filter by top-level vs all events
   if (viewFilter === "top-level") {
@@ -72,7 +63,7 @@ export default async function EventsPage({
 
   const totalPages = Math.ceil(count / perPage);
 
-  // Get events with asset counts, session counts, child event counts, and parent event name
+  // Get events with asset counts, session counts, child event counts, parent event name, and location name
   const eventsList = await db
     .select({
       event: events,
@@ -81,6 +72,11 @@ export default async function EventsPage({
          FROM events e2
          WHERE e2.id = events.parent_event_id)
       `.as('parent_event_name'),
+      locationName: sql<string>`
+        (SELECT l.name
+         FROM locations l
+         WHERE l.id = events.location_id)
+      `.as('location_name'),
       sessionCount: sql<number>`
         COALESCE(
           (SELECT COUNT(*)
@@ -113,13 +109,6 @@ export default async function EventsPage({
     .limit(perPage)
     .offset(offset);
 
-  // Get unique countries for filter
-  const countries = await db
-    .selectDistinct({ country: events.country })
-    .from(events)
-    .where(sql`${events.country} IS NOT NULL AND ${events.country} != ''`)
-    .orderBy(events.country);
-
   // Get unique event types for filter
   const types = await db
     .selectDistinct({ type: events.eventType })
@@ -143,11 +132,11 @@ export default async function EventsPage({
 
       {/* Search and Filters */}
       <form className="rounded-lg border p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <Input
               name="search"
-              placeholder="Search by name, ID, city, or center..."
+              placeholder="Search by event name..."
               defaultValue={search}
             />
           </div>
@@ -191,21 +180,6 @@ export default async function EventsPage({
               ))}
             </select>
           </div>
-
-          <div>
-            <select
-              name="country"
-              defaultValue={countryFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All Countries</option>
-              {countries.map((c) => (
-                <option key={c.country} value={c.country!}>
-                  {c.country}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className="flex gap-2 mt-4">
@@ -239,11 +213,12 @@ export default async function EventsPage({
             </tr>
           </thead>
           <tbody>
-            {eventsList.map(({ event, parentEventName, sessionCount, assetCount, childEventCount }, index) => (
+            {eventsList.map(({ event, parentEventName, locationName, sessionCount, assetCount, childEventCount }, index) => (
               <ExpandableEventRow
                 key={event.id}
                 event={event}
                 parentEventName={parentEventName}
+                locationName={locationName}
                 childEventCount={childEventCount}
                 sessionCount={sessionCount}
                 assetCount={assetCount}
@@ -270,7 +245,6 @@ export default async function EventsPage({
           ...(viewFilter !== "all" && { view: viewFilter }),
           ...(statusFilter && { status: statusFilter }),
           ...(typeFilter && { type: typeFilter }),
-          ...(countryFilter && { country: countryFilter }),
         }}
       />
     </div>

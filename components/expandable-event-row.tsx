@@ -21,6 +21,7 @@ interface ChildEvent {
 interface ExpandableEventRowProps {
   event: Event;
   parentEventName: string | null;
+  locationName: string | null;
   childEventCount: number;
   sessionCount: number;
   assetCount: number;
@@ -30,6 +31,7 @@ interface ExpandableEventRowProps {
 export function ExpandableEventRow({
   event,
   parentEventName,
+  locationName,
   childEventCount,
   sessionCount,
   assetCount,
@@ -105,9 +107,7 @@ export function ExpandableEventRow({
             : event.eventDateStart || "—"}
         </td>
         <td className="px-4 py-3 text-sm">
-          {event.city && event.country
-            ? `${event.city}, ${event.country}`
-            : event.country || "—"}
+          {locationName || "—"}
         </td>
         <td className="px-4 py-3 text-sm">
           <span
