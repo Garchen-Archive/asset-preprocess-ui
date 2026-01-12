@@ -32,6 +32,7 @@ type Asset = {
   createdAt: Date | null;
   updatedAt: Date | null;
   sourceUpdatedAt: Date | null;
+  lastHarvestedAt: Date | null;
 };
 
 type Event = {

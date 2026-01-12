@@ -31,6 +31,7 @@ type Asset = {
   createdAt: Date | null;
   updatedAt: Date | null;
   sourceUpdatedAt: Date | null;
+  lastHarvestedAt: Date | null;
 };
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -56,6 +57,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "createdAt", label: "System Created At", visible: false },
   { key: "updatedAt", label: "System Updated At", visible: false },
   { key: "sourceUpdatedAt", label: "Source Updated At", visible: false },
+  { key: "lastHarvestedAt", label: "Last Harvested At", visible: false },
 ];
 
 type AssetsTableProps = {
@@ -231,6 +233,9 @@ export function AssetsTable({
               {isColumnVisible("sourceUpdatedAt") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Source Updated</th>
               )}
+              {isColumnVisible("lastHarvestedAt") && (
+                <SortableHeader column="lastHarvestedAt">Last Harvested At</SortableHeader>
+              )}
               <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
             </tr>
           </thead>
@@ -354,6 +359,13 @@ export function AssetsTable({
                   <td className="px-4 py-3 text-sm">
                     {asset.sourceUpdatedAt
                       ? new Date(asset.sourceUpdatedAt).toLocaleString()
+                      : "—"}
+                  </td>
+                )}
+                {isColumnVisible("lastHarvestedAt") && (
+                  <td className="px-4 py-3 text-sm">
+                    {asset.lastHarvestedAt
+                      ? new Date(asset.lastHarvestedAt).toLocaleString()
                       : "—"}
                   </td>
                 )}

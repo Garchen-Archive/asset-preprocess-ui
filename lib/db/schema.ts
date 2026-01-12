@@ -36,10 +36,10 @@ export const archiveAssets = pgTable("archive_assets", {
   audioQualityIssues: text("audio_quality_issues"),
   videoQualityIssues: text("video_quality_issues"),
   needsEditing: boolean("needs_editing"),
-  teachingStart1: timestamp("teaching_start_1"),
-  teachingEnd1: timestamp("teaching_end_1"),
-  teachingStart2: timestamp("teaching_start_2"),
-  teachingEnd2: timestamp("teaching_end_2"),
+  teachingStart1: time("teaching_start_1"),
+  teachingEnd1: time("teaching_end_1"),
+  teachingStart2: time("teaching_start_2"),
+  teachingEnd2: time("teaching_end_2"),
 
   // 5. ADMINISTRATIVE
   // Optional reference to event (direct event assignment)
