@@ -118,6 +118,7 @@ export default async function AssetsPage({
     createdAt: archiveAssets.createdAt,
     updatedAt: archiveAssets.updatedAt,
     deletedAt: archiveAssets.deletedAt,
+    lastHarvestedAt: archiveAssets.lastHarvestedAt,
   }[sortBy] || archiveAssets.createdAt;
 
   const orderByClause = sortOrder === "asc" ? sortColumn : desc(sortColumn);
