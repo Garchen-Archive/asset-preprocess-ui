@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SessionSelect } from "@/components/session-select";
+import { EventOrSessionSelect } from "@/components/event-or-session-select";
 import { updateAsset } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
@@ -339,15 +339,15 @@ export default async function AssetEditPage({
         </div>
 
         {/* Administrative Section */}
-        <div className="rounded-lg border p-6">
+        <div id="assignment" className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Administrative</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <SessionSelect
+              <EventOrSessionSelect
+                events={eventsList}
                 sessions={sessionsList}
-                defaultValue={data.sessionId}
-                name="sessionId"
-                label="Session"
+                defaultEventId={data.eventId}
+                defaultSessionId={data.sessionId}
               />
             </div>
 

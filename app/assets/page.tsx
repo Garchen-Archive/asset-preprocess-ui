@@ -1,10 +1,10 @@
 import { db } from "@/lib/db/client";
-import { archiveAssets } from "@/lib/db/schema";
-import { desc, sql, ilike, or, eq, and } from "drizzle-orm";
+import { archiveAssets, events, sessions } from "@/lib/db/schema";
+import { desc, sql, ilike, or, eq, and, asc } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AssetsTable } from "@/components/assets-table";
+import { AssetsPageClient } from "@/components/assets-page-client";
 import { Pagination } from "@/components/pagination";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +130,19 @@ export default async function AssetsPage({
     .orderBy(orderByClause)
     .limit(perPage)
     .offset(offset);
+
+  // Fetch all events for bulk assignment dropdown
+  const eventsList = await db.select().from(events).orderBy(asc(events.eventName));
+
+  // Fetch all sessions with their event info for bulk assignment dropdown
+  const sessionsList = await db
+    .select({
+      session: sessions,
+      event: events,
+    })
+    .from(sessions)
+    .leftJoin(events, eq(sessions.eventId, events.id))
+    .orderBy(asc(sessions.sessionName));
 
   // Get available file formats dynamically
   const availableFormats = await db
@@ -355,9 +368,11 @@ export default async function AssetsPage({
         {search && ` matching "${search}"`}
       </div>
 
-      {/* Assets Table */}
-      <AssetsTable
+      {/* Assets Table with Bulk Actions */}
+      <AssetsPageClient
         assets={assets}
+        events={eventsList}
+        sessions={sessionsList}
         offset={offset}
         sortBy={sortBy}
         sortOrder={sortOrder}

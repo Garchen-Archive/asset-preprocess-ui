@@ -11,7 +11,13 @@ export type TopicType = typeof TOPIC_TYPES[number];
 
 // Category Types
 export const CATEGORY_TYPES = [
-  "Core Teachings",
+  "Empowerments",
+  "General Advice",
+  "Mantras",
+  "Mudras",
+  "Practices",
+  "Teachings",
+  "Transmissions"
 ] as const;
 
 export type CategoryType = typeof CATEGORY_TYPES[number];

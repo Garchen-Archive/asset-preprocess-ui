@@ -64,10 +64,39 @@ type AssetsTableProps = {
   sortBy?: string;
   sortOrder?: string;
   searchParams?: Record<string, string>;
+  selectedAssetIds?: string[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 };
 
-export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = "desc", searchParams = {} }: AssetsTableProps) {
+export function AssetsTable({
+  assets,
+  offset,
+  sortBy = "createdAt",
+  sortOrder = "desc",
+  searchParams = {},
+  selectedAssetIds = [],
+  onSelectionChange,
+}: AssetsTableProps) {
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectionChange) {
+      onSelectionChange(checked ? assets.map(a => a.id) : []);
+    }
+  };
+
+  const handleSelectOne = (assetId: string, checked: boolean) => {
+    if (onSelectionChange) {
+      if (checked) {
+        onSelectionChange([...selectedAssetIds, assetId]);
+      } else {
+        onSelectionChange(selectedAssetIds.filter(id => id !== assetId));
+      }
+    }
+  };
+
+  const isAllSelected = assets.length > 0 && selectedAssetIds.length === assets.length;
+  const isSomeSelected = selectedAssetIds.length > 0 && selectedAssetIds.length < assets.length;
 
   const isColumnVisible = (key: string) => {
     const column = columns.find((col) => col.key === key);
@@ -121,6 +150,20 @@ export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = 
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
+              {onSelectionChange && (
+                <th className="px-4 py-3 text-left text-sm font-medium w-12">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300"
+                    aria-label="Select all assets"
+                  />
+                </th>
+              )}
               <th className="px-4 py-3 text-left text-sm font-medium w-16">#</th>
               {isColumnVisible("filename") && (
                 <SortableHeader column="name">Filename</SortableHeader>
@@ -194,6 +237,17 @@ export function AssetsTable({ assets, offset, sortBy = "createdAt", sortOrder = 
           <tbody>
             {assets.map((asset, index) => (
               <tr key={asset.id} className="border-b hover:bg-muted/50">
+                {onSelectionChange && (
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedAssetIds.includes(asset.id)}
+                      onChange={(e) => handleSelectOne(asset.id, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                      aria-label={`Select ${asset.name || asset.title}`}
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-3 text-sm text-muted-foreground">
                   {offset + index + 1}
                 </td>

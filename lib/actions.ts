@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db/client";
 import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -37,7 +37,8 @@ export async function updateAsset(id: string, formData: FormData) {
     videoQualityIssues: formData.get("videoQualityIssues") as string || null,
     needsEditing: formData.get("needsEditing") === "on",
 
-    // Administrative
+    // Administrative - Event or Session assignment (mutually exclusive)
+    eventId: formData.get("eventId") as string || null,
     sessionId: formData.get("sessionId") as string || null,
     catalogingStatus: formData.get("catalogingStatus") as string || null,
     catalogedBy: formData.get("catalogedBy") as string || null,
@@ -428,4 +429,41 @@ export async function deleteLocation(id: string) {
 
   revalidatePath("/locations");
   redirect("/locations");
+}
+
+// ============================================================================
+// BULK ASSET ASSIGNMENT
+// ============================================================================
+
+export async function bulkAssignAssets({
+  assetIds,
+  eventId,
+  sessionId,
+}: {
+  assetIds: string[];
+  eventId: string | null;
+  sessionId: string | null;
+}) {
+  try {
+    // Validate that we have either eventId or sessionId, but not both
+    if ((eventId && sessionId) || (!eventId && !sessionId)) {
+      return { success: false, error: "Must specify either event or session, but not both" };
+    }
+
+    // Update all selected assets
+    await db
+      .update(archiveAssets)
+      .set({
+        eventId: eventId || null,
+        sessionId: sessionId || null,
+        updatedAt: new Date(),
+      })
+      .where(sql`${archiveAssets.id} = ANY(${assetIds})`);
+
+    revalidatePath("/assets");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Bulk assign error:", error);
+    return { success: false, error: error.message || "Failed to assign assets" };
+  }
 }
