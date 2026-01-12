@@ -42,6 +42,11 @@ export const archiveAssets = pgTable("archive_assets", {
   teachingEnd2: timestamp("teaching_end_2"),
 
   // 5. ADMINISTRATIVE
+  // Optional reference to event (direct event assignment)
+  // Mutually exclusive with sessionId - asset must have EITHER eventId OR sessionId
+  eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
+  // Optional reference to session
+  // Mutually exclusive with eventId - asset must have EITHER eventId OR sessionId
   sessionId: uuid("session_id").references(() => sessions.id, { onDelete: "set null" }),
   catalogingStatus: text("cataloging_status"),
   catalogedBy: text("cataloged_by"),
@@ -88,6 +93,7 @@ export const archiveAssets = pgTable("archive_assets", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   deletedAt: timestamp("deleted_at"),
   sourceUpdatedAt: timestamp("source_updated_at"),
+  lastHarvestedAt: timestamp("last_harvested_at"),
   sheetUpdatedAt: timestamp("sheet_updated_at"),
 
   // Additional metadata (flexible JSON storage)

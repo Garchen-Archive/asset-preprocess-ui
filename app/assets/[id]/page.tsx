@@ -18,7 +18,7 @@ export default async function AssetDetailPage({
     .select({
       asset: archiveAssets,
       session: sessions,
-      event: events,
+      sessionEvent: events, // Event via session
     })
     .from(archiveAssets)
     .leftJoin(sessions, eq(archiveAssets.sessionId, sessions.id))
@@ -30,7 +30,21 @@ export default async function AssetDetailPage({
     notFound();
   }
 
-  const { asset: data, session, event } = assetData;
+  const { asset: data, session, sessionEvent } = assetData;
+
+  // Fetch direct event if eventId is set
+  let directEvent = null;
+  if (data.eventId) {
+    const [eventResult] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, data.eventId))
+      .limit(1);
+    directEvent = eventResult || null;
+  }
+
+  // Use direct event if available, otherwise use event from session
+  const event = directEvent || sessionEvent;
 
   // Build breadcrumbs
   const breadcrumbItems: BreadcrumbItem[] = [
@@ -235,8 +249,33 @@ export default async function AssetDetailPage({
         <div className="space-y-6">
           {/* Administrative */}
           <div className="rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-4">Administrative</h2>
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-semibold">Administrative</h2>
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/assets/${params.id}/edit#assignment`}>
+                  Change Assignment
+                </Link>
+              </Button>
+            </div>
             <dl className="space-y-4">
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Assignment Level</dt>
+                <dd className="text-sm mt-1">
+                  {data.eventId && !data.sessionId ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
+                      Event (Direct)
+                    </span>
+                  ) : data.sessionId && !data.eventId ? (
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700">
+                      Session (Detailed)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700">
+                      Uncataloged
+                    </span>
+                  )}
+                </dd>
+              </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Event</dt>
                 <dd className="text-sm mt-1">
@@ -245,7 +284,7 @@ export default async function AssetDetailPage({
                       {event.eventName}
                     </Link>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">Not assigned</span>
                   )}
                 </dd>
               </div>
@@ -257,7 +296,7 @@ export default async function AssetDetailPage({
                       {session.sessionName}
                     </Link>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">Not assigned</span>
                   )}
                 </dd>
               </div>
