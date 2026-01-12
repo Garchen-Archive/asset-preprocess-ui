@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db/client";
 import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
