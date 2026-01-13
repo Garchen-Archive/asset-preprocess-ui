@@ -222,8 +222,16 @@ export default async function AssetDetailPage({
                 <dd className="text-sm mt-1">{data.videoCodec || "—"}</dd>
               </div>
               <div>
+                <dt className="text-sm font-medium text-muted-foreground">Video Codec Description</dt>
+                <dd className="text-sm mt-1">{data.videoCodecDescription || "—"}</dd>
+              </div>
+              <div>
                 <dt className="text-sm font-medium text-muted-foreground">Audio Codec</dt>
                 <dd className="text-sm mt-1">{data.audioCodec || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Audio Codec Description</dt>
+                <dd className="text-sm mt-1">{data.audioCodecDescription || "—"}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Audio Channels</dt>
@@ -454,6 +462,14 @@ export default async function AssetDetailPage({
                   <dd className="text-xs mt-1">
                     {data.sourceUpdatedAt
                       ? new Date(data.sourceUpdatedAt).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Last Harvested At</dt>
+                  <dd className="text-xs mt-1">
+                    {data.lastHarvestedAt
+                      ? new Date(data.lastHarvestedAt).toLocaleString()
                       : "—"}
                   </dd>
                 </div>
