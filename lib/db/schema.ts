@@ -36,10 +36,7 @@ export const archiveAssets = pgTable("archive_assets", {
   audioQualityIssues: text("audio_quality_issues"),
   videoQualityIssues: text("video_quality_issues"),
   needsEditing: boolean("needs_editing"),
-  teachingStart1: time("teaching_start_1"),
-  teachingEnd1: time("teaching_end_1"),
-  teachingStart2: time("teaching_start_2"),
-  teachingEnd2: time("teaching_end_2"),
+  // Note: teaching segments now stored in additional_metadata as teaching_segments array
 
   // 5. ADMINISTRATIVE
   // Optional reference to event (direct event assignment)
@@ -70,6 +67,8 @@ export const archiveAssets = pgTable("archive_assets", {
   resolution: text("resolution"),
   videoCodec: text("video_codec"),
   audioCodec: text("audio_codec"),
+  videoCodecDescription: text("video_codec_description"),
+  audioCodecDescription: text("audio_codec_description"),
   bitrate: text("bitrate"),
   sampleRate: text("sample_rate"),
   frameRate: text("frame_rate"),

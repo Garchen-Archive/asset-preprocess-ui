@@ -31,9 +31,23 @@ export default async function EventDetailPage({
     .from(sessions)
     .where(eq(sessions.eventId, params.id));
 
+  // Get assets directly assigned to this event (no session)
+  const directEventAssets = await db
+    .select({
+      id: archiveAssets.id,
+      title: archiveAssets.title,
+      name: archiveAssets.name,
+      assetType: archiveAssets.assetType,
+      duration: archiveAssets.duration,
+      sessionId: archiveAssets.sessionId,
+      catalogingStatus: archiveAssets.catalogingStatus,
+    })
+    .from(archiveAssets)
+    .where(eq(archiveAssets.eventId, params.id));
+
   // Get all assets from all sessions in this event
   const sessionIds = eventSessions.map(s => s.id);
-  const eventAssets = sessionIds.length > 0
+  const sessionAssets = sessionIds.length > 0
     ? await db
         .select({
           id: archiveAssets.id,
@@ -47,6 +61,8 @@ export default async function EventDetailPage({
         .from(archiveAssets)
         .where(inArray(archiveAssets.sessionId, sessionIds))
     : [];
+
+  const totalAssetCount = directEventAssets.length + sessionAssets.length;
 
   // Get location if exists
   const location = event.locationId
@@ -300,14 +316,48 @@ export default async function EventDetailPage({
             )}
           </div>
 
-          {/* Assets from all Sessions in this Event */}
-          <div className="rounded-lg border p-6 bg-green-50/50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">All Assets ({eventAssets.length})</h2>
-            </div>
-            {eventAssets.length > 0 ? (
+          {/* Direct Event Assets */}
+          {directEventAssets.length > 0 && (
+            <div className="rounded-lg border p-6 bg-blue-50/50">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Direct Event Assets ({directEventAssets.length})</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Assets assigned directly to this event (not through a session)
+              </p>
               <div className="space-y-2">
-                {eventAssets.map((asset) => {
+                {directEventAssets.map((asset) => (
+                  <Link
+                    key={asset.id}
+                    href={`/assets/${asset.id}`}
+                    className="block p-3 rounded border hover:bg-muted/50 bg-white"
+                  >
+                    <div className="font-medium">{asset.title || asset.name || "Untitled"}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {asset.assetType || "Unknown type"} • {asset.duration || "No duration"}
+                    </div>
+                    {asset.catalogingStatus && (
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {asset.catalogingStatus}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Assets from Sessions */}
+          {sessionAssets.length > 0 && (
+            <div className="rounded-lg border p-6 bg-green-50/50">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Session Assets ({sessionAssets.length})</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Assets assigned to sessions within this event
+              </p>
+              <div className="space-y-2">
+                {sessionAssets.map((asset) => {
                   const session = eventSessions.find(s => s.id === asset.sessionId);
                   return (
                     <Link
@@ -333,10 +383,16 @@ export default async function EventDetailPage({
                   );
                 })}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No assets in any sessions yet.</p>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* No assets message */}
+          {directEventAssets.length === 0 && sessionAssets.length === 0 && (
+            <div className="rounded-lg border p-6">
+              <h2 className="text-xl font-semibold mb-4">Assets</h2>
+              <p className="text-sm text-muted-foreground">No assets assigned to this event yet.</p>
+            </div>
+          )}
         </div>
 
         {/* Right column - Sidebar */}
@@ -374,8 +430,15 @@ export default async function EventDetailPage({
                 <dd className="text-sm mt-1">{eventSessions.length}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Asset Count</dt>
-                <dd className="text-sm mt-1">{eventAssets.length}</dd>
+                <dt className="text-sm font-medium text-muted-foreground">Total Asset Count</dt>
+                <dd className="text-sm mt-1">
+                  {totalAssetCount}
+                  {(directEventAssets.length > 0 || sessionAssets.length > 0) && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({directEventAssets.length} direct + {sessionAssets.length} via sessions)
+                    </span>
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Total Duration</dt>

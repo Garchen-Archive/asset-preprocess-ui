@@ -33,8 +33,13 @@ export default async function AssetsPage({
   const isMediaFileFilter = searchParams.isMediaFile || "";
   const safeToDeleteFilter = searchParams.safeToDelete || "";
   const excludeFilter = searchParams.exclude || "";
-  const formatsFilter = searchParams.formats || "";
-  const selectedFormats = formatsFilter ? formatsFilter.split(',') : [];
+  const formatsFilterRaw = searchParams.formats || "";
+  // Handle both string (single format) and array (multiple formats) from URL params
+  const selectedFormats = Array.isArray(formatsFilterRaw)
+    ? formatsFilterRaw
+    : formatsFilterRaw ? formatsFilterRaw.split(',') : [];
+  // Normalize to string for URL params
+  const formatsFilter = selectedFormats.length > 0 ? selectedFormats.join(',') : "";
   const sortBy = searchParams.sortBy || "createdAt";
   const sortOrder = searchParams.sortOrder || "desc";
   const page = parseInt(searchParams.page || "1");

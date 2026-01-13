@@ -23,6 +23,8 @@ type Asset = {
   resolution: string | null;
   videoCodec: string | null;
   audioCodec: string | null;
+  videoCodecDescription: string | null;
+  audioCodecDescription: string | null;
   frameRate: string | null;
   audioChannels: string | null;
   fileFormat: string | null;

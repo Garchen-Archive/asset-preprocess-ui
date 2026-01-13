@@ -22,6 +22,8 @@ type Asset = {
   resolution: string | null;
   videoCodec: string | null;
   audioCodec: string | null;
+  videoCodecDescription: string | null;
+  audioCodecDescription: string | null;
   frameRate: string | null;
   audioChannels: string | null;
   fileFormat: string | null;
@@ -49,6 +51,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "resolution", label: "Resolution", visible: false },
   { key: "videoCodec", label: "Video Codec", visible: false },
   { key: "audioCodec", label: "Audio Codec", visible: false },
+  { key: "videoCodecDescription", label: "Video Codec Description", visible: false },
+  { key: "audioCodecDescription", label: "Audio Codec Description", visible: false },
   { key: "frameRate", label: "Frame Rate", visible: false },
   { key: "audioChannels", label: "Audio Channels", visible: false },
   { key: "fileFormat", label: "File Format", visible: false },
@@ -209,6 +213,12 @@ export function AssetsTable({
               {isColumnVisible("audioCodec") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Audio Codec</th>
               )}
+              {isColumnVisible("videoCodecDescription") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Video Codec Description</th>
+              )}
+              {isColumnVisible("audioCodecDescription") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Audio Codec Description</th>
+              )}
               {isColumnVisible("frameRate") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Frame Rate</th>
               )}
@@ -325,6 +335,12 @@ export function AssetsTable({
                 )}
                 {isColumnVisible("audioCodec") && (
                   <td className="px-4 py-3 text-sm">{asset.audioCodec || "—"}</td>
+                )}
+                {isColumnVisible("videoCodecDescription") && (
+                  <td className="px-4 py-3 text-sm">{asset.videoCodecDescription || "—"}</td>
+                )}
+                {isColumnVisible("audioCodecDescription") && (
+                  <td className="px-4 py-3 text-sm">{asset.audioCodecDescription || "—"}</td>
                 )}
                 {isColumnVisible("frameRate") && (
                   <td className="px-4 py-3 text-sm">{asset.frameRate ? `${asset.frameRate} fps` : "—"}</td>
