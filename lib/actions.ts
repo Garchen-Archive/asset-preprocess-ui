@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db/client";
 import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -19,6 +19,9 @@ export async function updateAsset(id: string, formData: FormData) {
     }
   }
 
+  // Parse transcript languages (multiple checkboxes)
+  const transcriptLanguages = formData.getAll("transcriptLanguages") as string[];
+
   const data = {
     title: formData.get("title") as string || null,
     category: formData.get("category") as string || null,
@@ -31,6 +34,16 @@ export async function updateAsset(id: string, formData: FormData) {
     hasTibetanTranscription: formData.get("hasTibetanTranscription") === "on",
     hasWrittenTranslation: formData.get("hasWrittenTranslation") === "on",
     hasSubtitleFiles: formData.get("hasSubtitleFiles") === "on",
+
+    // Transcript
+    transcriptAvailable: formData.get("transcriptAvailable") === "on",
+    transcriptTimestamped: formData.get("transcriptTimestamped") as string || "No",
+    transcriptLanguages: transcriptLanguages.length > 0 ? transcriptLanguages : null,
+    transcriptLocation: formData.get("transcriptLocation") as string || null,
+
+    // Processing
+    processingStatus: formData.get("processingStatus") as string || "Raw",
+    needsDetailedReview: formData.get("needsDetailedReview") === "on",
 
     // Quality
     audioQualityIssues: formData.get("audioQualityIssues") as string || null,
@@ -465,5 +478,59 @@ export async function bulkAssignAssets({
   } catch (error: any) {
     console.error("Bulk assign error:", error);
     return { success: false, error: error.message || "Failed to assign assets" };
+  }
+}
+
+// Bulk update multiple fields on assets
+export async function bulkUpdateAssets({
+  assetIds,
+  updates,
+}: {
+  assetIds: string[];
+  updates: {
+    hasOralTranslation?: boolean | null;
+    oralTranslationLanguages?: string[] | null;
+    interpreterName?: string | null;
+    contributorOrg?: string | null;
+    processingStatus?: string | null;
+    needsDetailedReview?: boolean | null;
+    transcriptAvailable?: boolean | null;
+    transcriptTimestamped?: string | null;
+    transcriptLanguages?: string[] | null;
+    catalogingStatus?: string | null;
+    exclude?: boolean | null;
+    safeToDeleteFromGdrive?: boolean | null;
+    backedUpLocally?: boolean | null;
+  };
+}) {
+  try {
+    if (!assetIds || assetIds.length === 0) {
+      return { success: false, error: "No assets selected" };
+    }
+
+    // Filter out undefined values - only update fields that were explicitly set
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    }
+
+    // If no fields to update besides updatedAt, return early
+    if (Object.keys(updateData).length <= 1) {
+      return { success: false, error: "No fields to update" };
+    }
+
+    await db
+      .update(archiveAssets)
+      .set(updateData)
+      .where(inArray(archiveAssets.id, assetIds));
+
+    revalidatePath("/assets");
+    return { success: true, updatedCount: assetIds.length };
+  } catch (error: any) {
+    console.error("Bulk update error:", error);
+    return { success: false, error: error.message || "Failed to update assets" };
   }
 }
