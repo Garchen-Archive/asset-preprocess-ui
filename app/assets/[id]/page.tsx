@@ -205,6 +205,124 @@ export default async function AssetDetailPage({
             </dl>
           </div>
 
+          {/* Transcript Section */}
+          <div className="rounded-lg border p-6">
+            <h2 className="text-xl font-semibold mb-4">Transcript</h2>
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Available</dt>
+                <dd className="text-sm mt-1">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      data.transcriptAvailable
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {data.transcriptAvailable ? "Yes" : "No"}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Timestamped</dt>
+                <dd className="text-sm mt-1">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      data.transcriptTimestamped === "Yes"
+                        ? "bg-green-100 text-green-700"
+                        : data.transcriptTimestamped === "Partial"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {data.transcriptTimestamped || "No"}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Languages</dt>
+                <dd className="text-sm mt-1">
+                  {data.transcriptLanguages && data.transcriptLanguages.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {data.transcriptLanguages.map((lang: string) => (
+                        <span
+                          key={lang}
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700"
+                        >
+                          {lang}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Location</dt>
+                <dd className="text-sm mt-1">
+                  {data.transcriptLocation ? (
+                    data.transcriptLocation.startsWith("http") ? (
+                      <a
+                        href={data.transcriptLocation}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline break-all"
+                      >
+                        {data.transcriptLocation}
+                      </a>
+                    ) : (
+                      <span className="break-all">{data.transcriptLocation}</span>
+                    )
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Processing Section */}
+          <div className="rounded-lg border p-6">
+            <h2 className="text-xl font-semibold mb-4">Processing</h2>
+            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Status</dt>
+                <dd className="text-sm mt-1">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      data.processingStatus === "Complete" || data.processingStatus === "Published"
+                        ? "bg-green-100 text-green-700"
+                        : data.processingStatus === "In_Progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : data.processingStatus === "Ready_for_MVP"
+                        ? "bg-purple-100 text-purple-700"
+                        : data.processingStatus === "Needs_Work"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {data.processingStatus?.replace(/_/g, " ") || "Raw"}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Needs Detailed Review</dt>
+                <dd className="text-sm mt-1">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      data.needsDetailedReview
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {data.needsDetailedReview ? "Yes" : "No"}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+
           {/* Technical Metadata */}
           <div className="rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4">Technical Metadata</h2>

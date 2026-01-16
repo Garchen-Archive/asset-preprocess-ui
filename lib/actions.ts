@@ -19,6 +19,9 @@ export async function updateAsset(id: string, formData: FormData) {
     }
   }
 
+  // Parse transcript languages (multiple checkboxes)
+  const transcriptLanguages = formData.getAll("transcriptLanguages") as string[];
+
   const data = {
     title: formData.get("title") as string || null,
     category: formData.get("category") as string || null,
@@ -31,6 +34,16 @@ export async function updateAsset(id: string, formData: FormData) {
     hasTibetanTranscription: formData.get("hasTibetanTranscription") === "on",
     hasWrittenTranslation: formData.get("hasWrittenTranslation") === "on",
     hasSubtitleFiles: formData.get("hasSubtitleFiles") === "on",
+
+    // Transcript
+    transcriptAvailable: formData.get("transcriptAvailable") === "on",
+    transcriptTimestamped: formData.get("transcriptTimestamped") as string || "No",
+    transcriptLanguages: transcriptLanguages.length > 0 ? transcriptLanguages : null,
+    transcriptLocation: formData.get("transcriptLocation") as string || null,
+
+    // Processing
+    processingStatus: formData.get("processingStatus") as string || "Raw",
+    needsDetailedReview: formData.get("needsDetailedReview") === "on",
 
     // Quality
     audioQualityIssues: formData.get("audioQualityIssues") as string || null,

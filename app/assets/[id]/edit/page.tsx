@@ -297,6 +297,106 @@ export default async function AssetEditPage({
           </div>
         </div>
 
+        {/* Transcript Section */}
+        <div className="rounded-lg border p-6">
+          <h2 className="text-xl font-semibold mb-4">Transcript</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="transcriptAvailable"
+                name="transcriptAvailable"
+                defaultChecked={data.transcriptAvailable || false}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="transcriptAvailable" className="font-normal">
+                Transcript Available
+              </Label>
+            </div>
+
+            <div>
+              <Label htmlFor="transcriptTimestamped">Timestamped</Label>
+              <select
+                id="transcriptTimestamped"
+                name="transcriptTimestamped"
+                defaultValue={data.transcriptTimestamped || "No"}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+                <option value="Partial">Partial</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="transcriptLanguages">Languages</Label>
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mt-2">
+                {["EN", "ZH", "Tibetan", "German", "Vietnamese", "French", "Spanish", "Portuguese", "Other"].map((lang) => (
+                  <div key={lang} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`transcriptLang-${lang}`}
+                      name="transcriptLanguages"
+                      value={lang}
+                      defaultChecked={data.transcriptLanguages?.includes(lang) || false}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <Label htmlFor={`transcriptLang-${lang}`} className="font-normal text-sm">
+                      {lang}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="transcriptLocation">Location/URL</Label>
+              <Input
+                id="transcriptLocation"
+                name="transcriptLocation"
+                defaultValue={data.transcriptLocation || ""}
+                placeholder="URL or path to transcript file"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Processing Section */}
+        <div className="rounded-lg border p-6">
+          <h2 className="text-xl font-semibold mb-4">Processing</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="processingStatus">Processing Status</Label>
+              <select
+                id="processingStatus"
+                name="processingStatus"
+                defaultValue={data.processingStatus || "Raw"}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="Raw">Raw</option>
+                <option value="Ready_for_MVP">Ready for MVP</option>
+                <option value="Needs_Work">Needs Work</option>
+                <option value="In_Progress">In Progress</option>
+                <option value="Complete">Complete</option>
+                <option value="Published">Published</option>
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="needsDetailedReview"
+                name="needsDetailedReview"
+                defaultChecked={data.needsDetailedReview || false}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="needsDetailedReview" className="font-normal">
+                Needs Detailed Review
+              </Label>
+            </div>
+          </div>
+        </div>
+
         {/* Quality Section */}
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Quality & Editorial</h2>

@@ -31,12 +31,22 @@ export const archiveAssets = pgTable("archive_assets", {
   hasWrittenTranslation: boolean("has_written_translation"),
   hasSubtitleFiles: boolean("has_subtitle_files"),
 
+  // TRANSCRIPT FIELDS
+  transcriptAvailable: boolean("transcript_available").default(false),
+  transcriptTimestamped: text("transcript_timestamped").default("No"), // Yes, No, Partial
+  transcriptLanguages: jsonb("transcript_languages").$type<string[]>(), // EN, ZH, Tibetan, German, Vietnamese, French, Spanish, Portuguese, Other
+  transcriptLocation: text("transcript_location"),
+
   // 4. QUALITY/EDITORIAL
   overallQuality: text("overall_quality"),
   audioQualityIssues: text("audio_quality_issues"),
   videoQualityIssues: text("video_quality_issues"),
   needsEditing: boolean("needs_editing"),
   // Note: teaching segments now stored in additional_metadata as teaching_segments array
+
+  // PROCESSING FIELDS
+  processingStatus: text("processing_status").default("Raw"), // Raw, Ready_for_MVP, Needs_Work, In_Progress, Complete, Published
+  needsDetailedReview: boolean("needs_detailed_review").default(false),
 
   // 5. ADMINISTRATIVE
   // Optional reference to event (direct event assignment)

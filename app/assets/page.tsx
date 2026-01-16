@@ -1,11 +1,9 @@
 import { db } from "@/lib/db/client";
 import { archiveAssets, events, sessions } from "@/lib/db/schema";
 import { desc, sql, ilike, or, eq, and, asc } from "drizzle-orm";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AssetsPageClient } from "@/components/assets-page-client";
 import { Pagination } from "@/components/pagination";
+import { AssetFilters } from "@/components/asset-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +19,24 @@ export default async function AssetsPage({
     safeToDelete?: string;
     exclude?: string;
     formats?: string;
+    interpreterLangs?: string;
+    hasOralTranslation?: string;
+    transcriptLangs?: string;
+    hasTimestampedTranscript?: string;
+    transcriptsAvailable?: string;
+    needsDetailedReview?: string;
     sortBy?: string;
     sortOrder?: string;
     page?: string;
   };
 }) {
   const search = searchParams.search || "";
-  const statusFilter = searchParams.status || "";
+  const statusFilterRaw = searchParams.status || "";
+  // Handle both string (single status) and array (multiple statuses) from URL params
+  const selectedStatuses = Array.isArray(statusFilterRaw)
+    ? statusFilterRaw
+    : statusFilterRaw ? statusFilterRaw.split(',') : [];
+  const statusFilter = selectedStatuses.length > 0 ? selectedStatuses.join(',') : "";
   const typeFilter = searchParams.type || "";
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
@@ -40,6 +49,26 @@ export default async function AssetsPage({
     : formatsFilterRaw ? formatsFilterRaw.split(',') : [];
   // Normalize to string for URL params
   const formatsFilter = selectedFormats.length > 0 ? selectedFormats.join(',') : "";
+
+  // New filters
+  const interpreterLangsFilterRaw = searchParams.interpreterLangs || "";
+  const selectedInterpreterLangs = Array.isArray(interpreterLangsFilterRaw)
+    ? interpreterLangsFilterRaw
+    : interpreterLangsFilterRaw ? interpreterLangsFilterRaw.split(',') : [];
+  const interpreterLangsFilter = selectedInterpreterLangs.length > 0 ? selectedInterpreterLangs.join(',') : "";
+
+  const hasOralTranslationFilter = searchParams.hasOralTranslation || "";
+
+  const transcriptLangsFilterRaw = searchParams.transcriptLangs || "";
+  const selectedTranscriptLangs = Array.isArray(transcriptLangsFilterRaw)
+    ? transcriptLangsFilterRaw
+    : transcriptLangsFilterRaw ? transcriptLangsFilterRaw.split(',') : [];
+  const transcriptLangsFilter = selectedTranscriptLangs.length > 0 ? selectedTranscriptLangs.join(',') : "";
+
+  const hasTimestampedTranscriptFilter = searchParams.hasTimestampedTranscript || "";
+  const transcriptsAvailableFilter = searchParams.transcriptsAvailable || "";
+  const needsDetailedReviewFilter = searchParams.needsDetailedReview || "";
+
   const sortBy = searchParams.sortBy || "createdAt";
   const sortOrder = searchParams.sortOrder || "desc";
   const page = parseInt(searchParams.page || "1");
@@ -59,12 +88,12 @@ export default async function AssetsPage({
     );
   }
 
-  if (statusFilter) {
-    if (statusFilter === "null") {
-      conditions.push(sql`${archiveAssets.catalogingStatus} IS NULL`);
-    } else {
-      conditions.push(eq(archiveAssets.catalogingStatus, statusFilter));
-    }
+  // Multi-select processing status filter (uses new processingStatus field)
+  if (selectedStatuses.length > 0) {
+    const statusConditions = selectedStatuses.map(status => {
+      return eq(archiveAssets.processingStatus, status);
+    });
+    conditions.push(or(...statusConditions));
   }
 
   if (typeFilter) {
@@ -103,6 +132,71 @@ export default async function AssetsPage({
     conditions.push(
       or(...selectedFormats.map(format => eq(archiveAssets.fileFormat, format)))
     );
+  }
+
+  // Has oral translation filter
+  if (hasOralTranslationFilter) {
+    if (hasOralTranslationFilter === "true") {
+      conditions.push(eq(archiveAssets.hasOralTranslation, true));
+    } else if (hasOralTranslationFilter === "false") {
+      conditions.push(
+        or(eq(archiveAssets.hasOralTranslation, false), sql`${archiveAssets.hasOralTranslation} IS NULL`)
+      );
+    }
+  }
+
+  // Interpreter languages filter (JSONB array contains any of selected languages)
+  if (selectedInterpreterLangs.length > 0) {
+    const langConditions = selectedInterpreterLangs.map(lang =>
+      sql`${archiveAssets.oralTranslationLanguages}::jsonb @> ${JSON.stringify([lang])}::jsonb`
+    );
+    conditions.push(or(...langConditions));
+  }
+
+  // Transcript languages filter (uses new transcriptLanguages field)
+  if (selectedTranscriptLangs.length > 0) {
+    const langConditions = selectedTranscriptLangs.map(lang =>
+      sql`${archiveAssets.transcriptLanguages}::jsonb @> ${JSON.stringify([lang])}::jsonb`
+    );
+    conditions.push(or(...langConditions));
+  }
+
+  // Has timestamped transcript filter (uses new transcriptTimestamped field: Yes/No/Partial)
+  if (hasTimestampedTranscriptFilter) {
+    if (hasTimestampedTranscriptFilter === "Yes") {
+      conditions.push(eq(archiveAssets.transcriptTimestamped, "Yes"));
+    } else if (hasTimestampedTranscriptFilter === "Partial") {
+      conditions.push(eq(archiveAssets.transcriptTimestamped, "Partial"));
+    } else if (hasTimestampedTranscriptFilter === "No") {
+      conditions.push(
+        or(
+          eq(archiveAssets.transcriptTimestamped, "No"),
+          sql`${archiveAssets.transcriptTimestamped} IS NULL`
+        )
+      );
+    }
+  }
+
+  // Needs detailed review filter (uses new needsDetailedReview field)
+  if (needsDetailedReviewFilter) {
+    if (needsDetailedReviewFilter === "true") {
+      conditions.push(eq(archiveAssets.needsDetailedReview, true));
+    } else if (needsDetailedReviewFilter === "false") {
+      conditions.push(
+        or(eq(archiveAssets.needsDetailedReview, false), sql`${archiveAssets.needsDetailedReview} IS NULL`)
+      );
+    }
+  }
+
+  // Transcripts available filter (uses new transcriptAvailable field)
+  if (transcriptsAvailableFilter) {
+    if (transcriptsAvailableFilter === "true") {
+      conditions.push(eq(archiveAssets.transcriptAvailable, true));
+    } else if (transcriptsAvailableFilter === "false") {
+      conditions.push(
+        or(eq(archiveAssets.transcriptAvailable, false), sql`${archiveAssets.transcriptAvailable} IS NULL`)
+      );
+    }
   }
 
   // Get total count for pagination
@@ -158,8 +252,23 @@ export default async function AssetsPage({
     .orderBy(archiveAssets.fileFormat)
     .then(results => results.map(r => r.format).filter(Boolean) as string[]);
 
+  // Get available interpreter/transcript languages dynamically
+  const availableLanguages = await db
+    .select({ languages: archiveAssets.oralTranslationLanguages })
+    .from(archiveAssets)
+    .where(sql`${archiveAssets.oralTranslationLanguages} IS NOT NULL`)
+    .then(results => {
+      const allLangs = new Set<string>();
+      results.forEach(r => {
+        if (Array.isArray(r.languages)) {
+          r.languages.forEach(lang => allLangs.add(lang));
+        }
+      });
+      return Array.from(allLangs).sort();
+    });
+
   // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !excludeFilter && selectedFormats.length === 0;
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !excludeFilter && selectedFormats.length === 0 && !hasOralTranslationFilter && selectedInterpreterLangs.length === 0 && selectedTranscriptLangs.length === 0 && !hasTimestampedTranscriptFilter && !transcriptsAvailableFilter && !needsDetailedReviewFilter;
   let stats = null;
 
   if (showStats) {
@@ -249,124 +358,24 @@ export default async function AssetsPage({
       )}
 
       {/* Search and Filters */}
-      <form className="rounded-lg border p-4" method="GET">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
-            <Input
-              name="search"
-              placeholder="Search by filename or title..."
-              defaultValue={search}
-            />
-          </div>
-
-          <div>
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All Statuses</option>
-              <option value="null">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Ready">Ready</option>
-              <option value="Needs Review">Needs Review</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              name="type"
-              defaultValue={typeFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="video">Video</option>
-              <option value="audio">Audio</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              name="source"
-              defaultValue={sourceFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All Sources</option>
-              <option value="gdrive">Google Drive</option>
-              <option value="youtube">YouTube</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              name="isMediaFile"
-              defaultValue={isMediaFileFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All Files</option>
-              <option value="true">Media Files</option>
-              <option value="false">Non-Media Files</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              name="safeToDelete"
-              defaultValue={safeToDeleteFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All (Safe to Delete)</option>
-              <option value="true">Safe to Delete</option>
-              <option value="false">Keep</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              name="exclude"
-              defaultValue={excludeFilter}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">All (Exclude from Archive)</option>
-              <option value="true">Exclude from Archive</option>
-              <option value="false">Include in Archive</option>
-            </select>
-          </div>
-        </div>
-
-        {/* File Format Checkboxes */}
-        <div className="mt-4">
-          <label className="text-sm font-medium mb-2 block">
-            File Formats:
-            {selectedFormats.length > 0 && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                ({selectedFormats.length} selected)
-              </span>
-            )}
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {availableFormats.map((format) => (
-              <label key={format} className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="formats"
-                  value={format}
-                  defaultChecked={selectedFormats.includes(format)}
-                  className="rounded border-gray-300"
-                />
-                <span className="uppercase">{format}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2 mt-4">
-          <Button type="submit">Apply Filters</Button>
-          <Button type="button" variant="outline" asChild>
-            <Link href="/assets">Clear</Link>
-          </Button>
-        </div>
-      </form>
+      <AssetFilters
+        search={search}
+        selectedStatuses={selectedStatuses}
+        typeFilter={typeFilter}
+        sourceFilter={sourceFilter}
+        isMediaFileFilter={isMediaFileFilter}
+        safeToDeleteFilter={safeToDeleteFilter}
+        excludeFilter={excludeFilter}
+        selectedFormats={selectedFormats}
+        availableFormats={availableFormats}
+        hasOralTranslationFilter={hasOralTranslationFilter}
+        selectedInterpreterLangs={selectedInterpreterLangs}
+        availableLanguages={availableLanguages}
+        selectedTranscriptLangs={selectedTranscriptLangs}
+        hasTimestampedTranscriptFilter={hasTimestampedTranscriptFilter}
+        transcriptsAvailableFilter={transcriptsAvailableFilter}
+        needsDetailedReviewFilter={needsDetailedReviewFilter}
+      />
 
       {/* Results Info */}
       <div className="text-sm text-muted-foreground">
@@ -391,6 +400,12 @@ export default async function AssetsPage({
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
           ...(excludeFilter && { exclude: excludeFilter }),
           ...(formatsFilter && { formats: formatsFilter }),
+          ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
+          ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
+          ...(transcriptLangsFilter && { transcriptLangs: transcriptLangsFilter }),
+          ...(hasTimestampedTranscriptFilter && { hasTimestampedTranscript: hasTimestampedTranscriptFilter }),
+          ...(transcriptsAvailableFilter && { transcriptsAvailable: transcriptsAvailableFilter }),
+          ...(needsDetailedReviewFilter && { needsDetailedReview: needsDetailedReviewFilter }),
         }}
       />
 
@@ -408,6 +423,12 @@ export default async function AssetsPage({
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
           ...(excludeFilter && { exclude: excludeFilter }),
           ...(formatsFilter && { formats: formatsFilter }),
+          ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
+          ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
+          ...(transcriptLangsFilter && { transcriptLangs: transcriptLangsFilter }),
+          ...(hasTimestampedTranscriptFilter && { hasTimestampedTranscript: hasTimestampedTranscriptFilter }),
+          ...(transcriptsAvailableFilter && { transcriptsAvailable: transcriptsAvailableFilter }),
+          ...(needsDetailedReviewFilter && { needsDetailedReview: needsDetailedReviewFilter }),
         }}
       />
     </div>
