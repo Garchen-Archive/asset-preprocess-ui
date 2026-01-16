@@ -80,14 +80,14 @@ export function BulkEditModal({
       const updates: Record<string, unknown> = {};
 
       if (enabledFields.hasOralTranslation) updates.hasOralTranslation = hasOralTranslation;
-      if (enabledFields.oralTranslationLanguages) updates.oralTranslationLanguages = oralTranslationLanguages;
+      if (enabledFields.oralTranslationLanguages) updates.oralTranslationLanguages = oralTranslationLanguages.length > 0 ? oralTranslationLanguages : null;
       if (enabledFields.interpreterName) updates.interpreterName = interpreterName || null;
       if (enabledFields.contributorOrg) updates.contributorOrg = contributorOrg || null;
       if (enabledFields.processingStatus) updates.processingStatus = processingStatus;
       if (enabledFields.needsDetailedReview) updates.needsDetailedReview = needsDetailedReview;
       if (enabledFields.transcriptAvailable) updates.transcriptAvailable = transcriptAvailable;
       if (enabledFields.transcriptTimestamped) updates.transcriptTimestamped = transcriptTimestamped;
-      if (enabledFields.transcriptLanguages) updates.transcriptLanguages = transcriptLanguages;
+      if (enabledFields.transcriptLanguages) updates.transcriptLanguages = transcriptLanguages.length > 0 ? transcriptLanguages : null;
       if (enabledFields.catalogingStatus) updates.catalogingStatus = catalogingStatus || null;
       if (enabledFields.exclude) updates.exclude = exclude;
       if (enabledFields.safeToDeleteFromGdrive) updates.safeToDeleteFromGdrive = safeToDeleteFromGdrive;
