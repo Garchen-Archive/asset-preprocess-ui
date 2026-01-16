@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AssetsTable } from "./assets-table";
 import { BulkAssignModal } from "./bulk-assign-modal";
+import { BulkEditModal } from "./bulk-edit-modal";
 import { Button } from "./ui/button";
 
 type Asset = {
@@ -74,6 +75,7 @@ export function AssetsPageClient({
 }: AssetsPageClientProps) {
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
   const handleBulkAssignSuccess = () => {
     setSelectedAssetIds([]);
@@ -99,6 +101,13 @@ export function AssetsPageClient({
               </button>
             </div>
             <div className="flex gap-2">
+              <Button
+                onClick={() => setShowBulkEditModal(true)}
+                size="sm"
+                variant="outline"
+              >
+                Edit Fields
+              </Button>
               <Button
                 onClick={() => setShowBulkAssignModal(true)}
                 size="sm"
@@ -128,6 +137,15 @@ export function AssetsPageClient({
           events={events}
           sessions={sessions}
           onClose={() => setShowBulkAssignModal(false)}
+          onSuccess={handleBulkAssignSuccess}
+        />
+      )}
+
+      {/* Bulk Edit Modal */}
+      {showBulkEditModal && (
+        <BulkEditModal
+          selectedAssetIds={selectedAssetIds}
+          onClose={() => setShowBulkEditModal(false)}
           onSuccess={handleBulkAssignSuccess}
         />
       )}
