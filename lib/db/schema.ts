@@ -84,6 +84,7 @@ export const archiveAssets = pgTable("archive_assets", {
   frameRate: text("frame_rate"),
   audioChannels: text("audio_channels"),
   fileFormat: text("file_format"),
+  fileKind: text("file_kind"), // Human-readable kind (e.g., "MPEG-4 movie") like macOS Finder
   codec: text("codec"), // Legacy
 
   // YouTube-specific
