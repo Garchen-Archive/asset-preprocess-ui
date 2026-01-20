@@ -326,48 +326,73 @@ export default async function AssetDetailPage({
           {/* Technical Metadata */}
           <div className="rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4">Technical Metadata</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Resolution</dt>
-                <dd className="text-sm mt-1">{data.resolution || "—"}</dd>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Video Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Video</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Resolution</span>
+                    <span className="text-sm font-medium">{data.resolution || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Codec</span>
+                    <span className="text-sm font-medium">{data.videoCodec || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Codec Desc</span>
+                    <span className="text-xs text-muted-foreground/80 text-right max-w-[180px]">{data.videoCodecDescription || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Frame Rate</span>
+                    <span className="text-sm font-medium">{data.frameRate ? `${data.frameRate} fps` : "—"}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Frame Rate</dt>
-                <dd className="text-sm mt-1">{data.frameRate ? `${data.frameRate} fps` : "—"}</dd>
+
+              {/* Audio Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Audio</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Codec</span>
+                    <span className="text-sm font-medium">{data.audioCodec || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Codec Desc</span>
+                    <span className="text-xs text-muted-foreground/80 text-right max-w-[180px]">{data.audioCodecDescription || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Channels</span>
+                    <span className="text-sm font-medium">{data.audioChannels || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Sample Rate</span>
+                    <span className="text-sm font-medium">{data.sampleRate ? `${data.sampleRate} Hz` : "—"}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Video Codec</dt>
-                <dd className="text-sm mt-1">{data.videoCodec || "—"}</dd>
+
+              {/* File Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">File</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Kind</span>
+                    <span className="text-sm font-medium">{data.fileKind || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Format</span>
+                    <span className="text-sm font-medium uppercase">{data.fileFormat || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs text-muted-foreground">Bitrate</span>
+                    <span className="text-sm font-medium">{data.bitrate || "—"}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Video Codec Description</dt>
-                <dd className="text-sm mt-1">{data.videoCodecDescription || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Audio Codec</dt>
-                <dd className="text-sm mt-1">{data.audioCodec || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Audio Codec Description</dt>
-                <dd className="text-sm mt-1">{data.audioCodecDescription || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Audio Channels</dt>
-                <dd className="text-sm mt-1">{data.audioChannels || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Sample Rate</dt>
-                <dd className="text-sm mt-1">{data.sampleRate ? `${data.sampleRate} Hz` : "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Bitrate</dt>
-                <dd className="text-sm mt-1">{data.bitrate || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">File Format</dt>
-                <dd className="text-sm mt-1">{data.fileFormat || "—"}</dd>
-              </div>
-            </dl>
+            </div>
           </div>
         </div>
 
