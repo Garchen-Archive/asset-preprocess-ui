@@ -111,11 +111,22 @@ export function AssetsTable({
 
   const getSortUrl = (column: string) => {
     const newSortOrder = sortBy === column && sortOrder === "asc" ? "desc" : "asc";
-    const params = new URLSearchParams({
-      ...searchParams,
-      sortBy: column,
-      sortOrder: newSortOrder,
+    const params = new URLSearchParams();
+
+    // Preserve all existing filter params
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value != null && value !== '') {
+        params.set(key, value);
+      }
     });
+
+    // Set sort parameters
+    params.set('sortBy', column);
+    params.set('sortOrder', newSortOrder);
+
+    // Reset to page 1 when sorting changes
+    params.delete('page');
+
     return `/assets?${params}`;
   };
 
