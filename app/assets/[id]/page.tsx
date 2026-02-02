@@ -580,34 +580,10 @@ export default async function AssetDetailPage({
               </div>
             </dl>
 
-            {/* Database Timestamps */}
+            {/* Harvest Timestamps */}
             <div className="mt-6 pt-4 border-t">
-              <h3 className="text-sm font-medium text-muted-foreground/70 mb-3">Database Timestamps</h3>
-              <dl className="space-y-3 opacity-60">
-                <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Record Created</dt>
-                  <dd className="text-xs mt-1">
-                    {data.createdAt
-                      ? new Date(data.createdAt).toLocaleString()
-                      : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Record Updated</dt>
-                  <dd className="text-xs mt-1">
-                    {data.updatedAt
-                      ? new Date(data.updatedAt).toLocaleString()
-                      : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Source Last Updated</dt>
-                  <dd className="text-xs mt-1">
-                    {data.sourceUpdatedAt
-                      ? new Date(data.sourceUpdatedAt).toLocaleString()
-                      : "—"}
-                  </dd>
-                </div>
+              <h3 className="text-sm font-medium text-muted-foreground/70 mb-3">Harvest Info</h3>
+              <dl className="space-y-3">
                 <div>
                   <dt className="text-xs font-medium text-muted-foreground">Last Harvested At</dt>
                   <dd className="text-xs mt-1">
@@ -615,6 +591,39 @@ export default async function AssetDetailPage({
                       ? new Date(data.lastHarvestedAt).toLocaleString()
                       : "—"}
                   </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Harvest Imported At</dt>
+                  <dd className="text-xs mt-1">
+                    {data.sourceUpdatedAt
+                      ? new Date(data.sourceUpdatedAt).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* System Timestamps - dimmed */}
+            <div className="mt-4 pt-3 border-t border-dashed">
+              <h3 className="text-xs font-medium text-muted-foreground/50 mb-2">System</h3>
+              <dl className="space-y-2 opacity-40">
+                <div className="flex gap-4 text-xs">
+                  <div>
+                    <dt className="font-medium text-muted-foreground">Created</dt>
+                    <dd className="mt-0.5">
+                      {data.createdAt
+                        ? new Date(data.createdAt).toLocaleString()
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-muted-foreground">Updated</dt>
+                    <dd className="mt-0.5">
+                      {data.updatedAt
+                        ? new Date(data.updatedAt).toLocaleString()
+                        : "—"}
+                    </dd>
+                  </div>
                 </div>
               </dl>
             </div>

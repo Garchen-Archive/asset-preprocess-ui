@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets, locations } from "@/lib/db/schema";
+import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets, locations, addresses } from "@/lib/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteEvent } from "@/lib/actions";
+import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+function renderTextWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    part.match(urlRegex) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
 
 export default async function EventDetailPage({
   params,
@@ -70,6 +85,26 @@ export default async function EventDetailPage({
         .select()
         .from(locations)
         .where(eq(locations.id, event.locationId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
+
+  // Get organizer location if exists
+  const organizer = event.organizerId
+    ? await db
+        .select()
+        .from(locations)
+        .where(eq(locations.id, event.organizerId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
+
+  // Get venue address if exists
+  const venueAddress = event.venueAddressId
+    ? await db
+        .select()
+        .from(addresses)
+        .where(eq(addresses.id, event.venueAddressId))
         .limit(1)
         .then((results) => results[0] || null)
     : null;
@@ -164,11 +199,11 @@ export default async function EventDetailPage({
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Start Date</dt>
-                <dd className="text-sm mt-1">{event.eventDateStart || "—"}</dd>
+                <dd className="text-sm mt-1">{formatDate(event.eventDateStart)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">End Date</dt>
-                <dd className="text-sm mt-1">{event.eventDateEnd || "—"}</dd>
+                <dd className="text-sm mt-1">{formatDate(event.eventDateEnd)}</dd>
               </div>
             </dl>
           </div>
@@ -214,37 +249,95 @@ export default async function EventDetailPage({
             )}
           </div>
 
-          {/* Location */}
+          {/* Location & Venue */}
           <div className="rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-4">Location</h2>
-            {location ? (
-              <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
-                        {location.name}
-                      </Link>
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
-                    {location.city && location.country && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {location.city}, {location.country}
+            <h2 className="text-xl font-semibold mb-4">Location & Venue</h2>
+            <div className="space-y-4">
+              {/* Host Location */}
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Host Location</dt>
+                {location ? (
+                  <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium mb-1">
+                          <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
+                            {location.name}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
+                        {location.city && location.country && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {location.city}, {location.country}
+                          </p>
+                        )}
+                      </div>
+                      {location.locationType && (
+                        <Badge variant="secondary" className="text-xs">
+                          {location.locationType}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No host location assigned.</p>
+                )}
+              </div>
+
+              {/* Organizer */}
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Organizer</dt>
+                {organizer ? (
+                  <div className="p-4 rounded-md bg-blue-50/50 border border-blue-200">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium mb-1">
+                          <Link href={`/locations/${organizer.id}`} className="text-blue-600 hover:underline">
+                            {organizer.name}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono">{organizer.code}</p>
+                      </div>
+                      {organizer.locationType && (
+                        <Badge variant="secondary" className="text-xs">
+                          {organizer.locationType}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No organizer assigned.</p>
+                )}
+              </div>
+
+              {/* Venue Address */}
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground mb-2">Venue Address</dt>
+                {venueAddress ? (
+                  <div className="p-4 rounded-md bg-amber-50/50 border border-amber-200">
+                    {venueAddress.label && (
+                      <p className="text-sm font-medium mb-1">{venueAddress.label}</p>
+                    )}
+                    {venueAddress.fullAddress && (
+                      <p className="text-sm text-muted-foreground">{venueAddress.fullAddress}</p>
+                    )}
+                    {!venueAddress.fullAddress && (venueAddress.city || venueAddress.country) && (
+                      <p className="text-sm text-muted-foreground">
+                        {[venueAddress.city, venueAddress.stateProvince, venueAddress.country].filter(Boolean).join(", ")}
                       </p>
                     )}
                   </div>
-                  {location.locationType && (
-                    <Badge variant="secondary" className="text-xs">
-                      {location.locationType}
-                    </Badge>
-                  )}
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No venue address assigned.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No location assigned. <Link href={`/events/${params.id}/edit`} className="text-blue-600 hover:underline">Edit event</Link> to add one.
-              </p>
-            )}
+
+              {!location && !organizer && !venueAddress && (
+                <p className="text-sm text-muted-foreground">
+                  <Link href={`/events/${params.id}/edit`} className="text-blue-600 hover:underline">Edit event</Link> to assign location, organizer, or venue.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Child Events */}
@@ -261,29 +354,48 @@ export default async function EventDetailPage({
               </div>
             </div>
             {childEvents.length > 0 ? (
-              <div className="space-y-2">
-                {childEvents.map((childEvent) => (
-                  <Link
-                    key={childEvent.id}
-                    href={`/events/${childEvent.id}`}
-                    className="block p-3 rounded border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium">{childEvent.eventName}</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {childEvent.eventType || "No type"} • {childEvent.eventDateStart || "No date"}
-                        </div>
-                      </div>
-                      <span className="text-xs text-muted-foreground">→</span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Start Date</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">End Date</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {childEvents.map((childEvent) => (
+                      <tr key={childEvent.id} className="border-b hover:bg-muted/50">
+                        <td className="px-4 py-3 text-sm">
+                          <Link href={`/events/${childEvent.id}`} className="font-medium text-blue-600 hover:underline">
+                            {childEvent.eventName}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{childEvent.eventType || "—"}</td>
+                        <td className="px-4 py-3 text-sm">{formatDate(childEvent.eventDateStart)}</td>
+                        <td className="px-4 py-3 text-sm">{formatDate(childEvent.eventDateEnd)}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {childEvent.catalogingStatus ? (
+                            <Badge variant="outline" className="text-xs">{childEvent.catalogingStatus}</Badge>
+                          ) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <Link href={`/events/${childEvent.id}`} className="text-blue-600 hover:underline">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
                 <p>No child events yet</p>
-                <p className="text-xs mt-1">Click "Add Child Event" to create one</p>
+                <p className="text-xs mt-1">Click &quot;Create New&quot; to add one</p>
               </div>
             )}
           </div>
@@ -297,19 +409,43 @@ export default async function EventDetailPage({
               </Button>
             </div>
             {eventSessions.length > 0 ? (
-              <div className="space-y-2">
-                {eventSessions.map((session) => (
-                  <Link
-                    key={session.id}
-                    href={`/sessions/${session.id}`}
-                    className="block p-3 rounded border hover:bg-muted/50"
-                  >
-                    <div className="font-medium">{session.sessionName}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {session.topic || "No topic"} • {session.sessionDate || "No date"}
-                    </div>
-                  </Link>
-                ))}
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Time</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Topic</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventSessions.map((session) => (
+                      <tr key={session.id} className="border-b hover:bg-muted/50">
+                        <td className="px-4 py-3 text-sm">
+                          <Link href={`/sessions/${session.id}`} className="font-medium text-blue-600 hover:underline">
+                            {session.sessionName}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{session.sessionDate || "—"}</td>
+                        <td className="px-4 py-3 text-sm">{session.sessionTime || "—"}</td>
+                        <td className="px-4 py-3 text-sm">{session.topic || "—"}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {session.catalogingStatus ? (
+                            <Badge variant="outline" className="text-xs">{session.catalogingStatus}</Badge>
+                          ) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <Link href={`/sessions/${session.id}`} className="text-blue-600 hover:underline">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No sessions yet.</p>
@@ -317,82 +453,119 @@ export default async function EventDetailPage({
           </div>
 
           {/* Direct Event Assets */}
-          {directEventAssets.length > 0 && (
-            <div className="rounded-lg border p-6 bg-blue-50/50">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Direct Event Assets ({directEventAssets.length})</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Assets assigned directly to this event (not through a session)
-              </p>
-              <div className="space-y-2">
-                {directEventAssets.map((asset) => (
-                  <Link
-                    key={asset.id}
-                    href={`/assets/${asset.id}`}
-                    className="block p-3 rounded border hover:bg-muted/50 bg-white"
-                  >
-                    <div className="font-medium">{asset.title || asset.name || "Untitled"}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {asset.assetType || "Unknown type"} • {asset.duration || "No duration"}
-                    </div>
-                    {asset.catalogingStatus && (
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {asset.catalogingStatus}
-                      </Badge>
-                    )}
-                  </Link>
-                ))}
-              </div>
+          <div className="rounded-lg border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Direct Event Assets ({directEventAssets.length})</h2>
             </div>
-          )}
+            {directEventAssets.length > 0 ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Assets assigned directly to this event (not through a session)
+                </p>
+                <div className="rounded-md border">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-3 text-left text-sm font-medium">Title</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Duration</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {directEventAssets.map((asset) => (
+                        <tr key={asset.id} className="border-b hover:bg-muted/50">
+                          <td className="px-4 py-3 text-sm">
+                            <Link href={`/assets/${asset.id}`} className="font-medium text-blue-600 hover:underline">
+                              {asset.title || asset.name || "Untitled"}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-sm">{asset.assetType || "—"}</td>
+                          <td className="px-4 py-3 text-sm">{asset.duration || "—"}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {asset.catalogingStatus ? (
+                              <Badge variant="outline" className="text-xs">{asset.catalogingStatus}</Badge>
+                            ) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <Link href={`/assets/${asset.id}`} className="text-blue-600 hover:underline">
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No assets assigned directly to this event.</p>
+            )}
+          </div>
 
           {/* Assets from Sessions */}
-          {sessionAssets.length > 0 && (
-            <div className="rounded-lg border p-6 bg-green-50/50">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Session Assets ({sessionAssets.length})</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Assets assigned to sessions within this event
-              </p>
-              <div className="space-y-2">
-                {sessionAssets.map((asset) => {
-                  const session = eventSessions.find(s => s.id === asset.sessionId);
-                  return (
-                    <Link
-                      key={asset.id}
-                      href={`/assets/${asset.id}`}
-                      className="block p-3 rounded border hover:bg-muted/50 bg-white"
-                    >
-                      <div className="font-medium">{asset.title || asset.name || "Untitled"}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {asset.assetType || "Unknown type"} • {asset.duration || "No duration"}
-                        {session && (
-                          <span className="ml-2 text-xs">
-                            (Session: {session.sessionName})
-                          </span>
-                        )}
-                      </div>
-                      {asset.catalogingStatus && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {asset.catalogingStatus}
-                        </Badge>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
+          <div className="rounded-lg border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Session Assets ({sessionAssets.length})</h2>
             </div>
-          )}
-
-          {/* No assets message */}
-          {directEventAssets.length === 0 && sessionAssets.length === 0 && (
-            <div className="rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">Assets</h2>
-              <p className="text-sm text-muted-foreground">No assets assigned to this event yet.</p>
-            </div>
-          )}
+            {sessionAssets.length > 0 ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Assets assigned to sessions within this event
+                </p>
+                <div className="rounded-md border">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-3 text-left text-sm font-medium">Title</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Duration</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Session</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sessionAssets.map((asset) => {
+                        const session = eventSessions.find(s => s.id === asset.sessionId);
+                        return (
+                          <tr key={asset.id} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-3 text-sm">
+                              <Link href={`/assets/${asset.id}`} className="font-medium text-blue-600 hover:underline">
+                                {asset.title || asset.name || "Untitled"}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3 text-sm">{asset.assetType || "—"}</td>
+                            <td className="px-4 py-3 text-sm">{asset.duration || "—"}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {session ? (
+                                <Link href={`/sessions/${session.id}`} className="text-blue-600 hover:underline text-xs">
+                                  {session.sessionName}
+                                </Link>
+                              ) : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {asset.catalogingStatus ? (
+                                <Badge variant="outline" className="text-xs">{asset.catalogingStatus}</Badge>
+                              ) : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <Link href={`/assets/${asset.id}`} className="text-blue-600 hover:underline">
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No session assets yet.</p>
+            )}
+          </div>
         </div>
 
         {/* Right column - Sidebar */}
@@ -417,6 +590,24 @@ export default async function EventDetailPage({
                   </span>
                 </dd>
               </div>
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground">Harvest Source</dt>
+                <dd className="text-sm mt-1">
+                  {event.harvestSource ? (
+                    <Badge variant="outline" className="text-xs">
+                      {event.harvestSource}
+                    </Badge>
+                  ) : "—"}
+                </dd>
+              </div>
+              {event.lastHarvestedAt && (
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Last Harvested</dt>
+                  <dd className="text-sm mt-1">
+                    {new Date(event.lastHarvestedAt).toLocaleString()}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
                 <dd className="text-sm mt-1">{event.createdBy || "—"}</dd>
@@ -451,18 +642,39 @@ export default async function EventDetailPage({
           {event.notes && (
             <div className="rounded-lg border p-6">
               <h2 className="text-xl font-semibold mb-4">Notes</h2>
-              <p className="text-sm">{event.notes}</p>
+              <p className="text-sm whitespace-pre-wrap">{renderTextWithLinks(event.notes)}</p>
             </div>
           )}
 
-          {/* Additional Metadata */}
+          {/* Sheet Import Metadata */}
           {event.additionalMetadata && Object.keys(event.additionalMetadata).length > 0 && (
             <div className="rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">Additional Metadata</h2>
-              <div className="bg-muted/50 rounded p-3">
-                <pre className="text-xs overflow-x-auto">
-                  {JSON.stringify(event.additionalMetadata, null, 2)}
-                </pre>
+              <h2 className="text-xl font-semibold mb-4">Sheet Import Metadata</h2>
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Field</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(event.additionalMetadata)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([key, value]) => (
+                        <tr key={key} className="border-b hover:bg-muted/50">
+                          <td className="px-3 py-2 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                            {key}
+                          </td>
+                          <td className="px-3 py-2 text-xs break-all whitespace-pre-wrap">
+                            {typeof value === "object"
+                              ? JSON.stringify(value, null, 2)
+                              : renderTextWithLinks(String(value ?? ""))}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

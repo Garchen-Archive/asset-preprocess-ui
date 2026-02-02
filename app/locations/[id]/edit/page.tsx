@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { locations } from "@/lib/db/schema";
+import { locations, addresses, locationAddresses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { updateLocation } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
+import { LocationAddressTable } from "@/components/location-address-card";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -26,6 +27,37 @@ export default async function EditLocationPage({
   if (!location) {
     notFound();
   }
+
+  // Get addresses for this location via junction table
+  const linkedAddresses = await db
+    .select({
+      linkId: locationAddresses.id,
+      isPrimary: locationAddresses.isPrimary,
+      effectiveFrom: locationAddresses.effectiveFrom,
+      effectiveTo: locationAddresses.effectiveTo,
+      addressId: addresses.id,
+      label: addresses.label,
+      city: addresses.city,
+      stateProvince: addresses.stateProvince,
+      country: addresses.country,
+      fullAddress: addresses.fullAddress,
+      latitude: addresses.latitude,
+      longitude: addresses.longitude,
+    })
+    .from(locationAddresses)
+    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(eq(locationAddresses.locationId, params.id));
+
+  // Sort: primary first, then by effectiveFrom descending
+  linkedAddresses.sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1;
+    if (!a.isPrimary && b.isPrimary) return 1;
+    const aDate = a.effectiveFrom || "";
+    const bDate = b.effectiveFrom || "";
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    return bDate.localeCompare(aDate);
+  });
 
   const breadcrumbItems: BreadcrumbItem[] = [
     { label: "Locations", href: "/locations" },
@@ -98,61 +130,6 @@ export default async function EditLocationPage({
         </div>
 
         <div className="rounded-lg border p-6">
-          <h2 className="text-xl font-semibold mb-4">Address</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="fullAddress">Full Address</Label>
-              <Input
-                id="fullAddress"
-                name="fullAddress"
-                defaultValue={location.fullAddress || ""}
-                placeholder="Complete address"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                name="city"
-                defaultValue={location.city || ""}
-                placeholder="City"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="stateProvince">State/Province</Label>
-              <Input
-                id="stateProvince"
-                name="stateProvince"
-                defaultValue={location.stateProvince || ""}
-                placeholder="State or Province"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                name="country"
-                defaultValue={location.country || ""}
-                placeholder="Country"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="postalCode">Postal Code</Label>
-              <Input
-                id="postalCode"
-                name="postalCode"
-                defaultValue={location.postalCode || ""}
-                placeholder="Postal/ZIP code"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Geographic Coordinates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -215,6 +192,32 @@ export default async function EditLocationPage({
           </Button>
         </div>
       </form>
+
+      {/* Addresses Section (outside the location form) */}
+      <div className="rounded-lg border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Addresses ({linkedAddresses.length})</h2>
+          <div className="flex gap-2">
+            <Button size="sm" asChild>
+              <Link href={`/locations/${params.id}/addresses/new`}>Add Address</Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/locations/${params.id}/addresses/link`}>Add Existing</Link>
+            </Button>
+          </div>
+        </div>
+        {linkedAddresses.length > 0 ? (
+          <LocationAddressTable
+            addresses={linkedAddresses}
+            locationId={params.id}
+          />
+        ) : (
+          <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+            <p>No addresses yet</p>
+            <p className="text-xs mt-1">Click &quot;Add Address&quot; to create one, or &quot;Add Existing&quot; to associate an existing address</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

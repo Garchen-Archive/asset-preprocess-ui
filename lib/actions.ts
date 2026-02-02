@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db/client";
-import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations } from "@/lib/db/schema";
+import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations, addresses, locationAddresses } from "@/lib/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -92,6 +92,8 @@ export async function deleteAsset(id: string) {
 export async function createEvent(prevState: { error: string } | undefined, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
   const locationIdStr = formData.get("locationId") as string;
+  const organizerIdStr = formData.get("organizerId") as string;
+  const venueAddressIdStr = formData.get("venueAddressId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -101,6 +103,8 @@ export async function createEvent(prevState: { error: string } | undefined, form
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
     locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
+    organizerId: organizerIdStr && organizerIdStr !== "" ? organizerIdStr : null,
+    venueAddressId: venueAddressIdStr && venueAddressIdStr !== "" ? venueAddressIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
@@ -166,6 +170,8 @@ export async function updateEvent(id: string, formData: FormData) {
 
   const parentEventIdStr = formData.get("parentEventId") as string;
   const locationIdStr = formData.get("locationId") as string;
+  const organizerIdStr = formData.get("organizerId") as string;
+  const venueAddressIdStr = formData.get("venueAddressId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -175,6 +181,8 @@ export async function updateEvent(id: string, formData: FormData) {
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
     locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
+    organizerId: organizerIdStr && organizerIdStr !== "" ? organizerIdStr : null,
+    venueAddressId: venueAddressIdStr && venueAddressIdStr !== "" ? venueAddressIdStr : null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
@@ -445,6 +453,207 @@ export async function deleteLocation(id: string) {
 }
 
 // ============================================================================
+// ADDRESS ACTIONS (independent entity)
+// ============================================================================
+
+export async function createAddress(formData: FormData) {
+  const data = {
+    label: formData.get("label") as string || null,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    notes: formData.get("notes") as string || null,
+  };
+
+  const [newAddress] = await db.insert(addresses).values(data).returning();
+
+  revalidatePath("/addresses");
+  redirect(`/addresses/${newAddress.id}`);
+}
+
+export async function updateAddress(id: string, formData: FormData) {
+  const data = {
+    label: formData.get("label") as string || null,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    notes: formData.get("notes") as string || null,
+    updatedAt: new Date(),
+  };
+
+  await db.update(addresses).set(data).where(eq(addresses.id, id));
+
+  revalidatePath(`/addresses/${id}`);
+  redirect(`/addresses/${id}`);
+}
+
+export async function deleteAddress(id: string) {
+  await db.delete(addresses).where(eq(addresses.id, id));
+
+  revalidatePath("/addresses");
+  redirect("/addresses");
+}
+
+// ============================================================================
+// LOCATION-ADDRESS LINK ACTIONS (junction table)
+// ============================================================================
+
+export async function createAddressAndLinkToLocation(locationId: string, formData: FormData) {
+  const isPrimary = formData.get("isPrimary") === "on";
+
+  // Create the address
+  const [newAddress] = await db.insert(addresses).values({
+    label: formData.get("label") as string || null,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    notes: formData.get("notes") as string || null,
+  }).returning();
+
+  // If setting as primary, unset existing primary for this location
+  if (isPrimary) {
+    await db
+      .update(locationAddresses)
+      .set({ isPrimary: false })
+      .where(eq(locationAddresses.locationId, locationId));
+  }
+
+  // Link to location
+  await db.insert(locationAddresses).values({
+    locationId,
+    addressId: newAddress.id,
+    isPrimary,
+    effectiveFrom: formData.get("effectiveFrom") as string || null,
+    effectiveTo: formData.get("effectiveTo") as string || null,
+  });
+
+  revalidatePath(`/locations/${locationId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+export async function setLocationAddressPrimary(linkId: string, locationId: string) {
+  // Unset existing primary for this location
+  await db
+    .update(locationAddresses)
+    .set({ isPrimary: false })
+    .where(eq(locationAddresses.locationId, locationId));
+
+  // Set the new primary
+  await db
+    .update(locationAddresses)
+    .set({ isPrimary: true, updatedAt: new Date() })
+    .where(eq(locationAddresses.id, linkId));
+
+  revalidatePath(`/locations/${locationId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+export async function linkAddressToLocation(locationId: string, formData: FormData) {
+  const addressId = formData.get("addressId") as string;
+  const isPrimary = formData.get("isPrimary") === "on";
+
+  // If setting as primary, unset existing primary for this location
+  if (isPrimary) {
+    await db
+      .update(locationAddresses)
+      .set({ isPrimary: false })
+      .where(eq(locationAddresses.locationId, locationId));
+  }
+
+  await db.insert(locationAddresses).values({
+    locationId,
+    addressId,
+    isPrimary,
+    effectiveFrom: formData.get("effectiveFrom") as string || null,
+    effectiveTo: formData.get("effectiveTo") as string || null,
+  });
+
+  revalidatePath(`/locations/${locationId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+export async function unlinkAddressFromLocation(linkId: string, locationId: string) {
+  await db.delete(locationAddresses).where(eq(locationAddresses.id, linkId));
+
+  revalidatePath(`/locations/${locationId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+export async function updateLocationAddressLink(linkId: string, locationId: string, formData: FormData) {
+  const isPrimary = formData.get("isPrimary") === "on";
+
+  // If setting as primary, unset existing primary for this location
+  if (isPrimary) {
+    await db
+      .update(locationAddresses)
+      .set({ isPrimary: false })
+      .where(eq(locationAddresses.locationId, locationId));
+  }
+
+  await db.update(locationAddresses).set({
+    isPrimary,
+    effectiveFrom: formData.get("effectiveFrom") as string || null,
+    effectiveTo: formData.get("effectiveTo") as string || null,
+    updatedAt: new Date(),
+  }).where(eq(locationAddresses.id, linkId));
+
+  revalidatePath(`/locations/${locationId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+export async function updateAddressAndLink(addressId: string, linkId: string, locationId: string, formData: FormData) {
+  const isPrimary = formData.get("isPrimary") === "on";
+
+  // Update the address itself
+  const addressData = {
+    label: formData.get("label") as string || null,
+    city: formData.get("city") as string || null,
+    stateProvince: formData.get("stateProvince") as string || null,
+    country: formData.get("country") as string || null,
+    postalCode: formData.get("postalCode") as string || null,
+    fullAddress: formData.get("fullAddress") as string || null,
+    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
+    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    notes: formData.get("notes") as string || null,
+    updatedAt: new Date(),
+  };
+
+  await db.update(addresses).set(addressData).where(eq(addresses.id, addressId));
+
+  // If setting as primary, unset existing primary for this location
+  if (isPrimary) {
+    await db
+      .update(locationAddresses)
+      .set({ isPrimary: false })
+      .where(eq(locationAddresses.locationId, locationId));
+  }
+
+  // Update the link record
+  await db.update(locationAddresses).set({
+    isPrimary,
+    effectiveFrom: formData.get("effectiveFrom") as string || null,
+    effectiveTo: formData.get("effectiveTo") as string || null,
+    updatedAt: new Date(),
+  }).where(eq(locationAddresses.id, linkId));
+
+  revalidatePath(`/locations/${locationId}`);
+  revalidatePath(`/addresses/${addressId}`);
+  redirect(`/locations/${locationId}`);
+}
+
+// ============================================================================
 // BULK ASSET ASSIGNMENT
 // ============================================================================
 
@@ -532,5 +741,53 @@ export async function bulkUpdateAssets({
   } catch (error: any) {
     console.error("Bulk update error:", error);
     return { success: false, error: error.message || "Failed to update assets" };
+  }
+}
+
+// ============================================================================
+// BULK EVENT UPDATE
+// ============================================================================
+
+export async function bulkUpdateEvents({
+  eventIds,
+  updates,
+}: {
+  eventIds: string[];
+  updates: {
+    locationId?: string | null;
+    organizerId?: string | null;
+    eventType?: string | null;
+    catalogingStatus?: string | null;
+  };
+}) {
+  try {
+    if (!eventIds || eventIds.length === 0) {
+      return { success: false, error: "No events selected" };
+    }
+
+    // Filter out undefined values - only update fields that were explicitly set
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    }
+
+    // If no fields to update besides updatedAt, return early
+    if (Object.keys(updateData).length <= 1) {
+      return { success: false, error: "No fields to update" };
+    }
+
+    await db
+      .update(events)
+      .set(updateData)
+      .where(inArray(events.id, eventIds));
+
+    revalidatePath("/events");
+    return { success: true, updatedCount: eventIds.length };
+  } catch (error: any) {
+    console.error("Bulk update events error:", error);
+    return { success: false, error: error.message || "Failed to update events" };
   }
 }

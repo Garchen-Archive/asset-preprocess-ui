@@ -122,12 +122,16 @@ export const events = pgTable("events", {
   eventType: text("event_type"),
   parentEventId: uuid("parent_event_id").references((): any => events.id, { onDelete: "set null" }), // Self-referential
   locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
+  organizerId: uuid("organizer_id").references(() => locations.id, { onDelete: "set null" }),
+  venueAddressId: uuid("venue_address_id").references(() => addresses.id, { onDelete: "set null" }),
   category: text("category"), // Comma-delimited categories
   topic: text("topic"), // Comma-delimited topics
   eventDescription: text("event_description"),
   totalDuration: text("total_duration"),
   catalogingStatus: text("cataloging_status"),
   notes: text("notes"),
+  harvestSource: text("harvest_source"),
+  lastHarvestedAt: timestamp("last_harvested_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdBy: text("created_by"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -305,3 +309,44 @@ export const locations = pgTable("locations", {
 
 export type Location = typeof locations.$inferSelect;
 export type NewLocation = typeof locations.$inferInsert;
+
+// ============================================================================
+// ADDRESSES (independent entity)
+// ============================================================================
+
+export const addresses = pgTable("addresses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  label: text("label"),
+  city: text("city"),
+  stateProvince: text("state_province"),
+  country: text("country"),
+  postalCode: text("postal_code"),
+  fullAddress: text("full_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export type Address = typeof addresses.$inferSelect;
+export type NewAddress = typeof addresses.$inferInsert;
+
+// ============================================================================
+// LOCATION_ADDRESSES (junction table)
+// ============================================================================
+
+export const locationAddresses = pgTable("location_addresses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  locationId: uuid("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
+  addressId: uuid("address_id").notNull().references(() => addresses.id, { onDelete: "cascade" }),
+  isPrimary: boolean("is_primary").default(false),
+  effectiveFrom: date("effective_from", { mode: "string" }),
+  effectiveTo: date("effective_to", { mode: "string" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type LocationAddress = typeof locationAddresses.$inferSelect;
+export type NewLocationAddress = typeof locationAddresses.$inferInsert;

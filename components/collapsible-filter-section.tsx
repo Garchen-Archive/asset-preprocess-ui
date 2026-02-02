@@ -19,11 +19,11 @@ export function CollapsibleFilterSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-t pt-3">
+    <div className="mt-4 rounded-lg border bg-muted/30 px-4 py-3">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full text-sm font-medium hover:text-foreground/80"
+        className="flex items-center justify-between w-full text-sm font-semibold hover:text-foreground/80"
       >
         <span className="flex items-center gap-2">
           {title}
@@ -35,7 +35,7 @@ export function CollapsibleFilterSection({
         </span>
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      {isOpen && <div className="mt-3 space-y-3">{children}</div>}
+      {isOpen && <div className="mt-3 pt-3 border-t space-y-3">{children}</div>}
     </div>
   );
 }

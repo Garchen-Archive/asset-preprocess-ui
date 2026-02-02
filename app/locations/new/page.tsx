@@ -77,56 +77,6 @@ export default function NewLocationPage() {
         </div>
 
         <div className="rounded-lg border p-6">
-          <h2 className="text-xl font-semibold mb-4">Address</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="fullAddress">Full Address</Label>
-              <Input
-                id="fullAddress"
-                name="fullAddress"
-                placeholder="Complete address"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                name="city"
-                placeholder="City"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="stateProvince">State/Province</Label>
-              <Input
-                id="stateProvince"
-                name="stateProvince"
-                placeholder="State or Province"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                name="country"
-                placeholder="Country"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="postalCode">Postal Code</Label>
-              <Input
-                id="postalCode"
-                name="postalCode"
-                placeholder="Postal/ZIP code"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Geographic Coordinates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

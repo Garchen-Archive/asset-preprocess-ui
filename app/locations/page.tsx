@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { locations } from "@/lib/db/schema";
+import { locations, addresses, locationAddresses } from "@/lib/db/schema";
 import { desc, ilike, or, eq, and, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,25 +20,20 @@ export default async function LocationsPage({
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
 
-  // Build where conditions
+  // Build where conditions for locations
   const conditions = [];
 
   if (search) {
     conditions.push(
       or(
         ilike(locations.name, `%${search}%`),
-        ilike(locations.code, `%${search}%`),
-        ilike(locations.city, `%${search}%`)
+        ilike(locations.code, `%${search}%`)
       )
     );
   }
 
   if (typeFilter) {
     conditions.push(eq(locations.locationType, typeFilter));
-  }
-
-  if (countryFilter) {
-    conditions.push(eq(locations.country, countryFilter));
   }
 
   // Get locations with filters
@@ -48,12 +43,57 @@ export default async function LocationsPage({
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(locations.createdAt));
 
-  // Get unique countries for filter
+  // Get primary addresses for all locations via junction table
+  const primaryAddresses = await db
+    .select({
+      locationId: locationAddresses.locationId,
+      city: addresses.city,
+      stateProvince: addresses.stateProvince,
+      country: addresses.country,
+    })
+    .from(locationAddresses)
+    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(eq(locationAddresses.isPrimary, true));
+
+  // Build a map of locationId -> primary address
+  const primaryAddressMap = new Map(
+    primaryAddresses.map((pa) => [pa.locationId, pa])
+  );
+
+  // Apply country filter based on primary address
+  let filteredLocations = locationsList;
+  if (countryFilter) {
+    filteredLocations = locationsList.filter((loc) => {
+      const pa = primaryAddressMap.get(loc.id);
+      return pa?.country === countryFilter;
+    });
+  }
+
+  // Also include locations whose primary address city matches search
+  if (search) {
+    const searchLower = search.toLowerCase();
+    const cityMatchIds = new Set(
+      primaryAddresses
+        .filter((pa) => pa.city?.toLowerCase().includes(searchLower))
+        .map((pa) => pa.locationId)
+    );
+    const existingIds = new Set(filteredLocations.map((l) => l.id));
+    const additional = locationsList.filter(
+      (l) => cityMatchIds.has(l.id) && !existingIds.has(l.id)
+    );
+    filteredLocations = [...filteredLocations, ...additional];
+  }
+
+  // Get unique countries from primary addresses for filter dropdown
   const countries = await db
-    .selectDistinct({ country: locations.country })
-    .from(locations)
-    .where(sql`${locations.country} IS NOT NULL AND ${locations.country} != ''`)
-    .orderBy(locations.country);
+    .selectDistinct({ country: addresses.country })
+    .from(locationAddresses)
+    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(and(
+      eq(locationAddresses.isPrimary, true),
+      sql`${addresses.country} IS NOT NULL AND ${addresses.country} != ''`
+    ))
+    .orderBy(addresses.country);
 
   // Get unique location types for filter
   const types = await db
@@ -128,7 +168,7 @@ export default async function LocationsPage({
 
       {/* Results Info */}
       <div className="text-sm text-muted-foreground">
-        Showing {locationsList.length} locations
+        Showing {filteredLocations.length} locations
         {search && ` matching "${search}"`}
       </div>
 
@@ -147,37 +187,40 @@ export default async function LocationsPage({
             </tr>
           </thead>
           <tbody>
-            {locationsList.map((location) => (
-              <tr key={location.id} className="border-b hover:bg-muted/50">
-                <td className="px-4 py-3 text-sm font-mono">{location.code}</td>
-                <td className="px-4 py-3 text-sm font-medium">{location.name}</td>
-                <td className="px-4 py-3 text-sm">
-                  {location.locationType ? (
-                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
-                      {location.locationType}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="px-4 py-3 text-sm">{location.city || "—"}</td>
-                <td className="px-4 py-3 text-sm">{location.stateProvince || "—"}</td>
-                <td className="px-4 py-3 text-sm">{location.country || "—"}</td>
-                <td className="px-4 py-3 text-sm">
-                  <Link
-                    href={`/locations/${location.id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {filteredLocations.map((location) => {
+              const pa = primaryAddressMap.get(location.id);
+              return (
+                <tr key={location.id} className="border-b hover:bg-muted/50">
+                  <td className="px-4 py-3 text-sm font-mono">{location.code}</td>
+                  <td className="px-4 py-3 text-sm font-medium">{location.name}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {location.locationType ? (
+                      <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
+                        {location.locationType}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm">{pa?.city || "—"}</td>
+                  <td className="px-4 py-3 text-sm">{pa?.stateProvince || "—"}</td>
+                  <td className="px-4 py-3 text-sm">{pa?.country || "—"}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <Link
+                      href={`/locations/${location.id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {locationsList.length === 0 && (
+      {filteredLocations.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           No locations found. Create your first location to get started.
         </div>

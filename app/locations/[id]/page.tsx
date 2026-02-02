@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { locations } from "@/lib/db/schema";
+import { locations, addresses, locationAddresses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteLocation } from "@/lib/actions";
+import { LocationAddressTable } from "@/components/location-address-card";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,37 @@ export default async function LocationDetailPage({
   if (!location) {
     notFound();
   }
+
+  // Get addresses for this location via junction table
+  const linkedAddresses = await db
+    .select({
+      linkId: locationAddresses.id,
+      isPrimary: locationAddresses.isPrimary,
+      effectiveFrom: locationAddresses.effectiveFrom,
+      effectiveTo: locationAddresses.effectiveTo,
+      addressId: addresses.id,
+      label: addresses.label,
+      city: addresses.city,
+      stateProvince: addresses.stateProvince,
+      country: addresses.country,
+      fullAddress: addresses.fullAddress,
+      latitude: addresses.latitude,
+      longitude: addresses.longitude,
+    })
+    .from(locationAddresses)
+    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(eq(locationAddresses.locationId, params.id));
+
+  // Sort: primary first, then by effectiveFrom descending (latest first), nulls after dated entries
+  linkedAddresses.sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1;
+    if (!a.isPrimary && b.isPrimary) return 1;
+    const aDate = a.effectiveFrom || "";
+    const bDate = b.effectiveFrom || "";
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    return bDate.localeCompare(aDate);
+  });
 
   // Build breadcrumbs
   const breadcrumbItems: BreadcrumbItem[] = [
@@ -86,36 +118,33 @@ export default async function LocationDetailPage({
             </dl>
           </div>
 
-          {/* Address */}
+          {/* Addresses */}
           <div className="rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-4">Address</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {location.fullAddress && (
-                <div className="md:col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground">Full Address</dt>
-                  <dd className="text-sm mt-1">{location.fullAddress}</dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">City</dt>
-                <dd className="text-sm mt-1">{location.city || "—"}</dd>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Addresses ({linkedAddresses.length})</h2>
+              <div className="flex gap-2">
+                <Button size="sm" asChild>
+                  <Link href={`/locations/${params.id}/addresses/new`}>Add Address</Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/locations/${params.id}/addresses/link`}>Add Existing</Link>
+                </Button>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
-                <dd className="text-sm mt-1">{location.stateProvince || "—"}</dd>
+            </div>
+            {linkedAddresses.length > 0 ? (
+              <LocationAddressTable
+                addresses={linkedAddresses}
+                locationId={params.id}
+              />
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                <p>No addresses yet</p>
+                <p className="text-xs mt-1">Click &quot;Add Address&quot; to create one, or &quot;Add Existing&quot; to associate an existing address</p>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Country</dt>
-                <dd className="text-sm mt-1">{location.country || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Postal Code</dt>
-                <dd className="text-sm mt-1">{location.postalCode || "—"}</dd>
-              </div>
-            </dl>
+            )}
           </div>
 
-          {/* Geographic Coordinates */}
+          {/* Geographic Coordinates (location-level) */}
           {(location.latitude || location.longitude) && (
             <div className="rounded-lg border p-6">
               <h2 className="text-xl font-semibold mb-4">Geographic Coordinates</h2>

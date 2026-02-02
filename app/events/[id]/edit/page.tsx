@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, topics, categories, eventTopics, eventCategories, locations } from "@/lib/db/schema";
+import { events, topics, categories, eventTopics, eventCategories, locations, addresses, locationAddresses } from "@/lib/db/schema";
 import { eq, asc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { EditEventForm } from "@/components/edit-event-form";
@@ -42,6 +42,14 @@ export default async function EditEventPage({
   const allTopics = await db.select().from(topics).orderBy(asc(topics.name));
   const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
   const allLocations = await db.select().from(locations).orderBy(asc(locations.name));
+  const allAddresses = await db.select().from(addresses);
+  const locationAddressLinks = await db
+    .select({
+      locationId: locationAddresses.locationId,
+      addressId: locationAddresses.addressId,
+      isPrimary: locationAddresses.isPrimary,
+    })
+    .from(locationAddresses);
 
   // Get currently selected topics for this event
   const selectedEventTopics = await db
@@ -65,6 +73,8 @@ export default async function EditEventPage({
       allTopics={allTopics}
       allCategories={allCategories}
       allLocations={allLocations}
+      allAddresses={allAddresses}
+      locationAddressLinks={locationAddressLinks}
       selectedTopicIds={selectedEventTopics.map(t => t.id)}
       selectedCategoryIds={selectedEventCategories.map(c => c.id)}
     />
