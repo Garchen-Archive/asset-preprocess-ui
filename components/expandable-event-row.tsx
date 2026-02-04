@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Event } from "@/lib/db/schema";
+import { formatDate, formatDateRange } from "@/lib/utils";
 
 interface Session {
   id: string;
@@ -21,21 +22,23 @@ interface ChildEvent {
 interface ExpandableEventRowProps {
   event: Event;
   parentEventName: string | null;
-  locationName: string | null;
   childEventCount: number;
   sessionCount: number;
   assetCount: number;
   index: number;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function ExpandableEventRow({
   event,
   parentEventName,
-  locationName,
   childEventCount,
   sessionCount,
   assetCount,
   index,
+  isSelected,
+  onToggleSelect,
 }: ExpandableEventRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [childEvents, setChildEvents] = useState<ChildEvent[]>([]);
@@ -84,6 +87,16 @@ export function ExpandableEventRow({
         className="border-b hover:bg-muted/50 cursor-pointer"
         onClick={handleRowClick}
       >
+        {onToggleSelect && (
+          <td className="px-4 py-3 text-sm" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={onToggleSelect}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+          </td>
+        )}
         <td className="px-4 py-3 text-sm text-muted-foreground">
           {hasChildren && (
             <span className="mr-2">{isExpanded ? "▼" : "▶"}</span>
@@ -102,12 +115,7 @@ export function ExpandableEventRow({
         </td>
         <td className="px-4 py-3 text-sm">{event.eventType || "—"}</td>
         <td className="px-4 py-3 text-sm">
-          {event.eventDateStart && event.eventDateEnd
-            ? `${event.eventDateStart} to ${event.eventDateEnd}`
-            : event.eventDateStart || "—"}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {locationName || "—"}
+          {formatDateRange(event.eventDateStart, event.eventDateEnd)}
         </td>
         <td className="px-4 py-3 text-sm">
           <span
@@ -166,7 +174,7 @@ export function ExpandableEventRow({
       </tr>
       {isExpanded && hasChildren && (
         <tr>
-          <td colSpan={11} className="px-4 py-2 bg-muted/30">
+          <td colSpan={12} className="px-4 py-2 bg-muted/30">
             {isLoading ? (
               <div className="text-sm text-muted-foreground py-2">
                 Loading...
@@ -193,7 +201,7 @@ export function ExpandableEventRow({
                             )}
                             {childEvent.eventDateStart && (
                               <span className="text-xs text-muted-foreground">
-                                - {childEvent.eventDateStart}
+                                - {formatDate(childEvent.eventDateStart)}
                               </span>
                             )}
                           </Link>

@@ -60,7 +60,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "sampleRate", label: "Sample Rate", visible: false },
   { key: "createdAt", label: "System Created At", visible: false },
   { key: "updatedAt", label: "System Updated At", visible: false },
-  { key: "sourceUpdatedAt", label: "Source Updated At", visible: false },
+  { key: "sourceUpdatedAt", label: "Harvest Imported At", visible: false },
   { key: "lastHarvestedAt", label: "Last Harvested At", visible: false },
 ];
 

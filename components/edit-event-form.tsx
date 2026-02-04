@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
+import { VenueSelect, type VenueWithDetails } from "@/components/venue-select";
 import { updateEvent } from "@/lib/actions";
-import type { Event, Topic, Category, Location } from "@/lib/db/schema";
+import type { Event, Topic, Category, Organization } from "@/lib/db/schema";
 
 interface EditEventFormProps {
   event: Event;
@@ -16,7 +17,9 @@ interface EditEventFormProps {
   parentEvent: Event | null;
   allTopics: Topic[];
   allCategories: Category[];
-  allLocations: Location[];
+  allOrganizations: Organization[];
+  allVenues: VenueWithDetails[];
+  orgLocationMappings: { organizationId: string; locationId: string }[];
   selectedTopicIds: string[];
   selectedCategoryIds: string[];
 }
@@ -27,12 +30,62 @@ export function EditEventForm({
   parentEvent,
   allTopics,
   allCategories,
-  allLocations,
+  allOrganizations,
+  allVenues,
+  orgLocationMappings,
   selectedTopicIds: initialTopicIds,
   selectedCategoryIds: initialCategoryIds,
 }: EditEventFormProps) {
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(initialTopicIds);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialCategoryIds);
+
+  // Controlled state for organization fields
+  const [hostOrganizationId, setHostOrganizationId] = useState(event.hostOrganizationId || "");
+  const [organizerOrganizationId, setOrganizerOrganizationId] = useState(event.organizerOrganizationId || "");
+  const [onlineHostOrganizationId, setOnlineHostOrganizationId] = useState(event.onlineHostOrganizationId || "");
+  const [venueId, setVenueId] = useState(event.venueId || "");
+  const [showVenuePicker, setShowVenuePicker] = useState(false);
+  const [showSpaceOverride, setShowSpaceOverride] = useState(!!event.spaceLabel);
+
+  // Get the selected venue details
+  const selectedVenue = allVenues.find((v) => v.id === venueId);
+
+  // Get host org's locations and venues
+  const hostOrgLocationIds = orgLocationMappings
+    .filter((m) => m.organizationId === hostOrganizationId)
+    .map((m) => m.locationId);
+  const hostOrgVenues = allVenues.filter((v) => hostOrgLocationIds.includes(v.locationId));
+
+  // Check if selected venue belongs to host org
+  const venueIsFromHostOrg = selectedVenue && hostOrgLocationIds.includes(selectedVenue.locationId);
+
+  // Auto-select venue when host org changes
+  const handleHostOrgChange = (newHostOrgId: string) => {
+    setHostOrganizationId(newHostOrgId);
+    setShowVenuePicker(false);
+
+    // Auto-select venue from host org's location
+    if (newHostOrgId) {
+      const newOrgLocationIds = orgLocationMappings
+        .filter((m) => m.organizationId === newHostOrgId)
+        .map((m) => m.locationId);
+
+      if (newOrgLocationIds.length > 0) {
+        const matchingVenue = allVenues.find((v) => newOrgLocationIds.includes(v.locationId));
+        if (matchingVenue) {
+          setVenueId(matchingVenue.id);
+        }
+      }
+    }
+  };
+
+  // Use host org's venue
+  const useHostOrgVenue = () => {
+    if (hostOrgVenues.length > 0) {
+      setVenueId(hostOrgVenues[0].id);
+      setShowVenuePicker(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -140,28 +193,235 @@ export function EditEventForm({
           </div>
         </div>
 
-        {/* Location */}
+        {/* Orgs & Venue */}
         <div className="rounded-lg border p-6">
-          <h2 className="text-xl font-semibold mb-4">Location</h2>
+          <h2 className="text-xl font-semibold mb-4">Orgs & Venue</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="locationId">Location</Label>
+              <Label htmlFor="hostOrganizationId">Host Org</Label>
               <select
-                id="locationId"
-                name="locationId"
-                defaultValue={event.locationId || ""}
+                id="hostOrganizationId"
+                name="hostOrganizationId"
+                value={hostOrganizationId}
+                onChange={(e) => handleHostOrgChange(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">Select a location...</option>
-                {allLocations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name} ({location.code})
+                <option value="">Select host org...</option>
+                {allOrganizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.code})
                   </option>
                 ))}
               </select>
               <p className="text-xs text-muted-foreground mt-1">
-                Select from existing locations. <Link href="/locations/new" className="text-blue-600 hover:underline">Create new location</Link> if needed.
+                The org hosting this event at their location. <Link href="/organizations/new" className="text-blue-600 hover:underline">Create new</Link>
               </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="onlineHostOrganizationId">Online Host Org (optional)</Label>
+              <select
+                id="onlineHostOrganizationId"
+                name="onlineHostOrganizationId"
+                value={onlineHostOrganizationId}
+                onChange={(e) => setOnlineHostOrganizationId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {allOrganizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Org responsible for online streaming/hosting (Zoom, YouTube, etc.)
+              </p>
+            </div>
+
+            <div className="md:col-span-2 opacity-50">
+              <Label htmlFor="organizerOrganizationId" className="text-muted-foreground">Organizer Org (optional, for future use)</Label>
+              <select
+                id="organizerOrganizationId"
+                name="organizerOrganizationId"
+                value={organizerOrganizationId}
+                onChange={(e) => setOrganizerOrganizationId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Not set</option>
+                {allOrganizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.code})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Org that organized/sponsored this event (often same as host)
+              </p>
+            </div>
+
+            {/* Venue Section */}
+            <div className="md:col-span-2 border-t pt-4 mt-2">
+              <Label className="mb-2 block">Venue</Label>
+
+              {/* Hidden input for form submission */}
+              <input type="hidden" name="venueId" value={venueId} />
+
+              {/* Show venue card when a venue is selected and not in picker mode */}
+              {selectedVenue && !showVenuePicker ? (
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-base">
+                        {selectedVenue.locationName}
+                        {selectedVenue.spaceLabel && (
+                          <span className="text-muted-foreground font-normal"> — {selectedVenue.spaceLabel}</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {selectedVenue.isOnline ? (
+                          <span className="text-blue-600">Online venue</span>
+                        ) : selectedVenue.fullAddress ? (
+                          <span>{selectedVenue.fullAddress}</span>
+                        ) : selectedVenue.city || selectedVenue.country ? (
+                          <span>{[selectedVenue.city, selectedVenue.country].filter(Boolean).join(", ")}</span>
+                        ) : (
+                          <span className="italic">No address</span>
+                        )}
+                      </div>
+                      {venueIsFromHostOrg && (
+                        <div className="text-xs text-green-600 mt-2">
+                          ✓ From host org&apos;s location
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowVenuePicker(true)}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setVenueId(""); setShowVenuePicker(false); }}
+                        className="text-sm text-muted-foreground hover:text-red-600"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : showVenuePicker ? (
+                /* Venue picker mode */
+                <div className="space-y-3">
+                  <VenueSelect
+                    venues={allVenues}
+                    value={venueId}
+                    onChange={(id) => {
+                      setVenueId(id);
+                      if (id) setShowVenuePicker(false);
+                    }}
+                    name=""
+                    label=""
+                  />
+                  <div className="flex gap-2">
+                    {hostOrgVenues.length > 0 && !venueIsFromHostOrg && (
+                      <button
+                        type="button"
+                        onClick={useHostOrgVenue}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Use host org venue
+                      </button>
+                    )}
+                    {selectedVenue && (
+                      <button
+                        type="button"
+                        onClick={() => setShowVenuePicker(false)}
+                        className="text-sm text-muted-foreground hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* No venue selected */
+                <div className="rounded-lg border-2 border-dashed p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">No venue selected</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {hostOrgVenues.length > 0 ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={useHostOrgVenue}
+                        >
+                          Use Host Org Venue
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowVenuePicker(true)}
+                        >
+                          Choose Different
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setShowVenuePicker(true)}
+                      >
+                        Select Venue
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground mt-2">
+                <Link href="/locations" className="text-blue-600 hover:underline">Manage locations & venues</Link>
+              </p>
+            </div>
+
+            {/* Space Override - collapsed by default */}
+            <div className="md:col-span-2">
+              {!showSpaceOverride ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSpaceOverride(true)}
+                  className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  + Override room/space
+                </button>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label htmlFor="spaceLabel">Space Override</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowSpaceOverride(false)}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                  <Input
+                    id="spaceLabel"
+                    name="spaceLabel"
+                    defaultValue={event.spaceLabel || ""}
+                    placeholder="e.g., Main Hall, Room 201"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only if different from the venue&apos;s default
+                  </p>
+                </div>
+              )}
+              {!showSpaceOverride && <input type="hidden" name="spaceLabel" value={event.spaceLabel || ""} />}
             </div>
           </div>
         </div>

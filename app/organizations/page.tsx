@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { locations, addresses, locationAddresses } from "@/lib/db/schema";
+import { organizations, locations, organizationLocations, locationAddresses, addresses } from "@/lib/db/schema";
 import { desc, ilike, or, eq, and, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
-export default async function LocationsPage({
+export default async function OrganizationsPage({
   searchParams,
 }: {
   searchParams: {
@@ -20,100 +20,120 @@ export default async function LocationsPage({
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
 
-  // Build where conditions for locations
+  // Build where conditions for organizations
   const conditions = [];
 
   if (search) {
     conditions.push(
       or(
-        ilike(locations.name, `%${search}%`),
-        ilike(locations.code, `%${search}%`)
+        ilike(organizations.name, `%${search}%`),
+        ilike(organizations.code, `%${search}%`)
       )
     );
   }
 
   if (typeFilter) {
-    conditions.push(eq(locations.locationType, typeFilter));
+    conditions.push(eq(organizations.orgType, typeFilter));
   }
 
-  // Get locations with filters
-  const locationsList = await db
+  // Get organizations with filters
+  const organizationsList = await db
     .select()
-    .from(locations)
+    .from(organizations)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(locations.createdAt));
+    .orderBy(desc(organizations.createdAt));
 
-  // Get primary addresses for all locations via junction table
-  const primaryAddresses = await db
+  // Get primary locations for all organizations via organization_locations junction
+  // Then get the primary address for each location via location_addresses
+  const primaryLocationsWithAddresses = await db
     .select({
-      locationId: locationAddresses.locationId,
+      organizationId: organizationLocations.organizationId,
+      locationId: locations.id,
+      locationName: locations.name,
       city: addresses.city,
       stateProvince: addresses.stateProvince,
       country: addresses.country,
     })
-    .from(locationAddresses)
-    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
-    .where(eq(locationAddresses.isPrimary, true));
+    .from(organizationLocations)
+    .innerJoin(locations, eq(organizationLocations.locationId, locations.id))
+    .leftJoin(locationAddresses, and(
+      eq(locationAddresses.locationId, locations.id),
+      eq(locationAddresses.isPrimary, true)
+    ))
+    .leftJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(eq(organizationLocations.isPrimary, true));
 
-  // Build a map of locationId -> primary address
-  const primaryAddressMap = new Map(
-    primaryAddresses.map((pa) => [pa.locationId, pa])
+  // Build a map of organizationId -> primary location info (with address)
+  const primaryLocationMap = new Map(
+    primaryLocationsWithAddresses.map((pl) => [pl.organizationId, pl])
   );
 
-  // Apply country filter based on primary address
-  let filteredLocations = locationsList;
+  // Apply country filter based on primary location's address
+  let filteredOrganizations = organizationsList;
   if (countryFilter) {
-    filteredLocations = locationsList.filter((loc) => {
-      const pa = primaryAddressMap.get(loc.id);
-      return pa?.country === countryFilter;
+    filteredOrganizations = organizationsList.filter((org) => {
+      const pl = primaryLocationMap.get(org.id);
+      return pl?.country === countryFilter;
     });
   }
 
-  // Also include locations whose primary address city matches search
+  // Also include organizations whose primary location's address city matches search
   if (search) {
     const searchLower = search.toLowerCase();
     const cityMatchIds = new Set(
-      primaryAddresses
-        .filter((pa) => pa.city?.toLowerCase().includes(searchLower))
-        .map((pa) => pa.locationId)
+      primaryLocationsWithAddresses
+        .filter((pl) => pl.city?.toLowerCase().includes(searchLower))
+        .map((pl) => pl.organizationId)
     );
-    const existingIds = new Set(filteredLocations.map((l) => l.id));
-    const additional = locationsList.filter(
-      (l) => cityMatchIds.has(l.id) && !existingIds.has(l.id)
+    const existingIds = new Set(filteredOrganizations.map((o) => o.id));
+    const additional = organizationsList.filter(
+      (o) => cityMatchIds.has(o.id) && !existingIds.has(o.id)
     );
-    filteredLocations = [...filteredLocations, ...additional];
+    filteredOrganizations = [...filteredOrganizations, ...additional];
   }
 
-  // Get unique countries from primary addresses for filter dropdown
-  const countries = await db
+  // Get unique countries from primary location addresses for filter dropdown
+  const addressCountries = await db
     .selectDistinct({ country: addresses.country })
-    .from(locationAddresses)
+    .from(organizationLocations)
+    .innerJoin(locations, eq(organizationLocations.locationId, locations.id))
+    .innerJoin(locationAddresses, and(
+      eq(locationAddresses.locationId, locations.id),
+      eq(locationAddresses.isPrimary, true)
+    ))
     .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
     .where(and(
-      eq(locationAddresses.isPrimary, true),
+      eq(organizationLocations.isPrimary, true),
       sql`${addresses.country} IS NOT NULL AND ${addresses.country} != ''`
     ))
     .orderBy(addresses.country);
 
-  // Get unique location types for filter
+  const countries = addressCountries.map(c => c.country).filter(Boolean).sort() as string[];
+
+  // Get unique org types for filter
   const types = await db
-    .selectDistinct({ type: locations.locationType })
-    .from(locations)
-    .where(sql`${locations.locationType} IS NOT NULL AND ${locations.locationType} != ''`)
-    .orderBy(locations.locationType);
+    .selectDistinct({ type: organizations.orgType })
+    .from(organizations)
+    .where(sql`${organizations.orgType} IS NOT NULL AND ${organizations.orgType} != ''`)
+    .orderBy(organizations.orgType);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Locations</h1>
+          <h1 className="text-3xl font-bold">Orgs</h1>
           <p className="text-muted-foreground">
-            Manage teaching centers, dharma centers, and venues
+            Manage dharma centers, monasteries, and organizing entities
           </p>
         </div>
-        <Button asChild>
-          <Link href="/locations/new">Create Location</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/organizations/import">Bulk Import</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/organizations/new">Create Org</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -150,8 +170,8 @@ export default async function LocationsPage({
             >
               <option value="">All Countries</option>
               {countries.map((c) => (
-                <option key={c.country} value={c.country!}>
-                  {c.country}
+                <option key={c} value={c!}>
+                  {c}
                 </option>
               ))}
             </select>
@@ -161,18 +181,18 @@ export default async function LocationsPage({
         <div className="flex gap-2 mt-4">
           <Button type="submit">Apply Filters</Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/locations">Clear</Link>
+            <Link href="/organizations">Clear</Link>
           </Button>
         </div>
       </form>
 
       {/* Results Info */}
       <div className="text-sm text-muted-foreground">
-        Showing {filteredLocations.length} locations
+        Showing {filteredOrganizations.length} orgs
         {search && ` matching "${search}"`}
       </div>
 
-      {/* Locations Table */}
+      {/* Orgs Table */}
       <div className="rounded-md border">
         <table className="w-full">
           <thead>
@@ -187,27 +207,27 @@ export default async function LocationsPage({
             </tr>
           </thead>
           <tbody>
-            {filteredLocations.map((location) => {
-              const pa = primaryAddressMap.get(location.id);
+            {filteredOrganizations.map((org) => {
+              const pl = primaryLocationMap.get(org.id);
               return (
-                <tr key={location.id} className="border-b hover:bg-muted/50">
-                  <td className="px-4 py-3 text-sm font-mono">{location.code}</td>
-                  <td className="px-4 py-3 text-sm font-medium">{location.name}</td>
+                <tr key={org.id} className="border-b hover:bg-muted/50">
+                  <td className="px-4 py-3 text-sm font-mono">{org.code}</td>
+                  <td className="px-4 py-3 text-sm font-medium">{org.name}</td>
                   <td className="px-4 py-3 text-sm">
-                    {location.locationType ? (
+                    {org.orgType ? (
                       <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
-                        {location.locationType}
+                        {org.orgType}
                       </span>
                     ) : (
                       "—"
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm">{pa?.city || "—"}</td>
-                  <td className="px-4 py-3 text-sm">{pa?.stateProvince || "—"}</td>
-                  <td className="px-4 py-3 text-sm">{pa?.country || "—"}</td>
+                  <td className="px-4 py-3 text-sm">{pl?.city || "—"}</td>
+                  <td className="px-4 py-3 text-sm">{pl?.stateProvince || "—"}</td>
+                  <td className="px-4 py-3 text-sm">{pl?.country || "—"}</td>
                   <td className="px-4 py-3 text-sm">
                     <Link
-                      href={`/locations/${location.id}`}
+                      href={`/organizations/${org.id}`}
                       className="text-blue-600 hover:underline"
                     >
                       View
@@ -220,9 +240,9 @@ export default async function LocationsPage({
         </table>
       </div>
 
-      {filteredLocations.length === 0 && (
+      {filteredOrganizations.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          No locations found. Create your first location to get started.
+          No orgs found. Create your first org to get started.
         </div>
       )}
     </div>

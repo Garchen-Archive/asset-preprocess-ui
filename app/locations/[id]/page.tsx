@@ -1,12 +1,13 @@
 import { db } from "@/lib/db/client";
-import { locations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { locations, addresses, locationAddresses, venues } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs, BreadcrumbItem } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { deleteLocation } from "@/lib/actions";
+import { LocationAddressTable } from "@/components/location-address-card";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,39 @@ export default async function LocationDetailPage({
   if (!location) {
     notFound();
   }
+
+  // Get addresses for this location via junction table
+  const linkedAddresses = await db
+    .select({
+      linkId: locationAddresses.id,
+      isPrimary: locationAddresses.isPrimary,
+      effectiveFrom: locationAddresses.effectiveFrom,
+      effectiveTo: locationAddresses.effectiveTo,
+      addressId: addresses.id,
+      label: addresses.label,
+      city: addresses.city,
+      stateProvince: addresses.stateProvince,
+      country: addresses.country,
+      fullAddress: addresses.fullAddress,
+      latitude: addresses.latitude,
+      longitude: addresses.longitude,
+    })
+    .from(locationAddresses)
+    .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+    .where(eq(locationAddresses.locationId, params.id));
+
+  // Separate primary address from other addresses
+  const primaryAddress = linkedAddresses.find((a) => a.isPrimary);
+  const otherAddresses = linkedAddresses.filter((a) => !a.isPrimary);
+
+  // Sort other addresses by effectiveFrom descending (latest first), nulls after dated entries
+  otherAddresses.sort((a, b) => {
+    const aDate = a.effectiveFrom || "";
+    const bDate = b.effectiveFrom || "";
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    return bDate.localeCompare(aDate);
+  });
 
   // Build breadcrumbs
   const breadcrumbItems: BreadcrumbItem[] = [
@@ -84,67 +118,111 @@ export default async function LocationDetailPage({
                 </div>
               )}
             </dl>
-          </div>
 
-          {/* Address */}
-          <div className="rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-4">Address</h2>
-            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {location.fullAddress && (
-                <div className="md:col-span-2">
-                  <dt className="text-sm font-medium text-muted-foreground">Full Address</dt>
-                  <dd className="text-sm mt-1">{location.fullAddress}</dd>
+            {/* Primary Address - displayed inline as part of location */}
+            {primaryAddress && (
+              <>
+                <hr className="my-6" />
+                <h3 className="text-lg font-semibold mb-4">Primary Address</h3>
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {primaryAddress.label && (
+                    <div className="md:col-span-2">
+                      <dt className="text-sm font-medium text-muted-foreground">Label</dt>
+                      <dd className="text-sm mt-1">{primaryAddress.label}</dd>
+                    </div>
+                  )}
+                  {primaryAddress.fullAddress && (
+                    <div className="md:col-span-2">
+                      <dt className="text-sm font-medium text-muted-foreground">Full Address</dt>
+                      <dd className="text-sm mt-1">{primaryAddress.fullAddress}</dd>
+                    </div>
+                  )}
+                  {primaryAddress.city && (
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">City</dt>
+                      <dd className="text-sm mt-1">{primaryAddress.city}</dd>
+                    </div>
+                  )}
+                  {primaryAddress.stateProvince && (
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
+                      <dd className="text-sm mt-1">{primaryAddress.stateProvince}</dd>
+                    </div>
+                  )}
+                  {primaryAddress.country && (
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Country</dt>
+                      <dd className="text-sm mt-1">{primaryAddress.country}</dd>
+                    </div>
+                  )}
+                  {(primaryAddress.latitude || primaryAddress.longitude) && (
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Coordinates</dt>
+                      <dd className="text-sm mt-1 font-mono">
+                        {primaryAddress.latitude}, {primaryAddress.longitude}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                <div className="mt-4">
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/locations/${params.id}/addresses/${primaryAddress.linkId}/edit`}>
+                      Edit Primary Address
+                    </Link>
+                  </Button>
                 </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">City</dt>
-                <dd className="text-sm mt-1">{location.city || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">State/Province</dt>
-                <dd className="text-sm mt-1">{location.stateProvince || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Country</dt>
-                <dd className="text-sm mt-1">{location.country || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">Postal Code</dt>
-                <dd className="text-sm mt-1">{location.postalCode || "—"}</dd>
-              </div>
-            </dl>
-          </div>
-
-          {/* Geographic Coordinates */}
-          {(location.latitude || location.longitude) && (
-            <div className="rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">Geographic Coordinates</h2>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Latitude</dt>
-                  <dd className="text-sm mt-1 font-mono">
-                    {location.latitude?.toFixed(6) || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-muted-foreground">Longitude</dt>
-                  <dd className="text-sm mt-1 font-mono">
-                    {location.longitude?.toFixed(6) || "—"}
-                  </dd>
-                </div>
-                {location.latitude && location.longitude && (
-                  <div className="md:col-span-2">
-                    <a
-                      href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      View on Google Maps →
-                    </a>
+              </>
+            )}
+            {!primaryAddress && (
+              <>
+                <hr className="my-6" />
+                <div className="text-center py-4 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                  <p>No primary address set</p>
+                  <div className="flex gap-2 justify-center mt-2">
+                    <Button size="sm" asChild>
+                      <Link href={`/locations/${params.id}/addresses/new`}>Add Address</Link>
+                    </Button>
                   </div>
-                )}
-              </dl>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Past & Alternative Addresses */}
+          <div className="rounded-lg border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">
+                Past & Alternative Addresses {otherAddresses.length > 0 && `(${otherAddresses.length})`}
+              </h2>
+              <div className="flex gap-2">
+                <Button size="sm" asChild>
+                  <Link href={`/locations/${params.id}/addresses/new`}>Add Address</Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/locations/${params.id}/addresses/link`}>Add Existing</Link>
+                </Button>
+              </div>
+            </div>
+            {otherAddresses.length > 0 ? (
+              <LocationAddressTable
+                addresses={otherAddresses}
+                locationId={params.id}
+              />
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                <p>No past or alternative addresses</p>
+                <p className="text-xs mt-1">Click &quot;Add Address&quot; to add a historical or alternative address</p>
+              </div>
+            )}
+          </div>
+
+          {/* Is Online */}
+          {location.isOnline && (
+            <div className="rounded-lg border p-6 bg-blue-50/50">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">Online Location</Badge>
+                <p className="text-sm text-muted-foreground">This is an online/virtual location.</p>
+              </div>
             </div>
           )}
 

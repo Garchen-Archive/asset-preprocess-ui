@@ -194,10 +194,8 @@ export default async function SessionDetailPage({
                           </Link>
                         </p>
                         <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
-                        {location.city && location.country && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {location.city}, {location.country}
-                          </p>
+                        {location.isOnline && (
+                          <p className="text-xs text-muted-foreground mt-1">Online</p>
                         )}
                       </div>
                       {location.locationType && (
