@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import { addresses } from "@/lib/db/schema";
-import { desc, ilike, or, and, sql, isNull } from "drizzle-orm";
+import { desc, ilike, or, and, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
