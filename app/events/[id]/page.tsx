@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets, locations, addresses } from "@/lib/db/schema";
+import { events, sessions, topics, categories, eventTopics, eventCategories, archiveAssets, organizations, addresses, venues, locations } from "@/lib/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -79,32 +79,58 @@ export default async function EventDetailPage({
 
   const totalAssetCount = directEventAssets.length + sessionAssets.length;
 
-  // Get location if exists
-  const location = event.locationId
+  // Get host organization if exists
+  const hostOrg = event.hostOrganizationId
     ? await db
         .select()
-        .from(locations)
-        .where(eq(locations.id, event.locationId))
+        .from(organizations)
+        .where(eq(organizations.id, event.hostOrganizationId))
         .limit(1)
         .then((results) => results[0] || null)
     : null;
 
-  // Get organizer location if exists
-  const organizer = event.organizerId
+  // Get organizer organization if exists
+  const organizerOrg = event.organizerOrganizationId
     ? await db
         .select()
-        .from(locations)
-        .where(eq(locations.id, event.organizerId))
+        .from(organizations)
+        .where(eq(organizations.id, event.organizerOrganizationId))
         .limit(1)
         .then((results) => results[0] || null)
     : null;
 
-  // Get venue address if exists
-  const venueAddress = event.venueAddressId
+  // Get online host organization if exists
+  const onlineHostOrg = event.onlineHostOrganizationId
     ? await db
         .select()
-        .from(addresses)
-        .where(eq(addresses.id, event.venueAddressId))
+        .from(organizations)
+        .where(eq(organizations.id, event.onlineHostOrganizationId))
+        .limit(1)
+        .then((results) => results[0] || null)
+    : null;
+
+  // Get venue with location and address details
+  const venue = event.venueId
+    ? await db
+        .select({
+          id: venues.id,
+          spaceLabel: venues.spaceLabel,
+          name: venues.name,
+          venueType: venues.venueType,
+          locationId: locations.id,
+          locationName: locations.name,
+          locationCode: locations.code,
+          isOnline: locations.isOnline,
+          addressLabel: addresses.label,
+          fullAddress: addresses.fullAddress,
+          city: addresses.city,
+          stateProvince: addresses.stateProvince,
+          country: addresses.country,
+        })
+        .from(venues)
+        .innerJoin(locations, eq(venues.locationId, locations.id))
+        .leftJoin(addresses, eq(venues.addressId, addresses.id))
+        .where(eq(venues.id, event.venueId))
         .limit(1)
         .then((results) => results[0] || null)
     : null;
@@ -249,95 +275,111 @@ export default async function EventDetailPage({
             )}
           </div>
 
-          {/* Location & Venue */}
+          {/* Orgs & Venue */}
           <div className="rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-4">Location & Venue</h2>
-            <div className="space-y-4">
-              {/* Host Location */}
+            <h2 className="text-xl font-semibold mb-4">Orgs & Venue</h2>
+
+            {/* Orgs Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Host Org */}
               <div>
-                <dt className="text-sm font-medium text-muted-foreground mb-2">Host Location</dt>
-                {location ? (
-                  <div className="p-4 rounded-md bg-green-50/50 border border-green-200">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-medium mb-1">
-                          <Link href={`/locations/${location.id}`} className="text-blue-600 hover:underline">
-                            {location.name}
-                          </Link>
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
-                        {location.city && location.country && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {location.city}, {location.country}
-                          </p>
+                <dt className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Host</dt>
+                {hostOrg ? (
+                  <Link
+                    href={`/organizations/${hostOrg.id}`}
+                    className="block p-3 rounded-md bg-purple-50/50 border border-purple-200 hover:bg-purple-50 transition-colors"
+                  >
+                    <p className="font-medium text-sm">{hostOrg.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{hostOrg.code}</p>
+                  </Link>
+                ) : (
+                  <p className="text-sm text-muted-foreground p-3 border-2 border-dashed rounded-md">Not set</p>
+                )}
+              </div>
+
+              {/* Organizer Org - only show if set (de-emphasized, for future use) */}
+              {organizerOrg ? (
+                <div className="opacity-60">
+                  <dt className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Organizer</dt>
+                  <Link
+                    href={`/organizations/${organizerOrg.id}`}
+                    className="block p-3 rounded-md bg-gray-50/50 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    <p className="font-medium text-sm">{organizerOrg.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{organizerOrg.code}</p>
+                  </Link>
+                </div>
+              ) : (
+                <div /> /* Empty placeholder to maintain grid */
+              )}
+            </div>
+
+            {/* Online Host Org - only show if set */}
+            {onlineHostOrg && (
+              <div className="mb-4">
+                <dt className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Online Host</dt>
+                <Link
+                  href={`/organizations/${onlineHostOrg.id}`}
+                  className="block p-3 rounded-md bg-cyan-50/50 border border-cyan-200 hover:bg-cyan-50 transition-colors"
+                >
+                  <p className="font-medium text-sm">{onlineHostOrg.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{onlineHostOrg.code}</p>
+                  <p className="text-xs text-cyan-600 mt-1">Handles online streaming/hosting</p>
+                </Link>
+              </div>
+            )}
+
+            {/* Venue */}
+            <div className="border-t pt-4">
+              <dt className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Venue</dt>
+              {venue ? (
+                <div className="p-4 rounded-md bg-amber-50/50 border border-amber-200">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-base">
+                        <Link href={`/locations/${venue.locationId}`} className="hover:underline">
+                          {venue.locationName}
+                        </Link>
+                        {venue.spaceLabel && (
+                          <span className="text-muted-foreground font-normal"> — {venue.spaceLabel}</span>
                         )}
-                      </div>
-                      {location.locationType && (
-                        <Badge variant="secondary" className="text-xs">
-                          {location.locationType}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No host location assigned.</p>
-                )}
-              </div>
-
-              {/* Organizer */}
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground mb-2">Organizer</dt>
-                {organizer ? (
-                  <div className="p-4 rounded-md bg-blue-50/50 border border-blue-200">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-medium mb-1">
-                          <Link href={`/locations/${organizer.id}`} className="text-blue-600 hover:underline">
-                            {organizer.name}
-                          </Link>
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono">{organizer.code}</p>
-                      </div>
-                      {organizer.locationType && (
-                        <Badge variant="secondary" className="text-xs">
-                          {organizer.locationType}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No organizer assigned.</p>
-                )}
-              </div>
-
-              {/* Venue Address */}
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground mb-2">Venue Address</dt>
-                {venueAddress ? (
-                  <div className="p-4 rounded-md bg-amber-50/50 border border-amber-200">
-                    {venueAddress.label && (
-                      <p className="text-sm font-medium mb-1">{venueAddress.label}</p>
-                    )}
-                    {venueAddress.fullAddress && (
-                      <p className="text-sm text-muted-foreground">{venueAddress.fullAddress}</p>
-                    )}
-                    {!venueAddress.fullAddress && (venueAddress.city || venueAddress.country) && (
-                      <p className="text-sm text-muted-foreground">
-                        {[venueAddress.city, venueAddress.stateProvince, venueAddress.country].filter(Boolean).join(", ")}
                       </p>
+                      {venue.isOnline ? (
+                        <p className="text-sm text-blue-600 mt-1">Online venue</p>
+                      ) : venue.fullAddress ? (
+                        <p className="text-sm text-muted-foreground mt-1">{venue.fullAddress}</p>
+                      ) : (venue.city || venue.country) ? (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {[venue.city, venue.stateProvince, venue.country].filter(Boolean).join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                    {venue.venueType && (
+                      <Badge variant="secondary" className="text-xs ml-2">
+                        {venue.venueType}
+                      </Badge>
                     )}
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No venue address assigned.</p>
-                )}
-              </div>
-
-              {!location && !organizer && !venueAddress && (
-                <p className="text-sm text-muted-foreground">
-                  <Link href={`/events/${params.id}/edit`} className="text-blue-600 hover:underline">Edit event</Link> to assign location, organizer, or venue.
+                  {event.spaceLabel && event.spaceLabel !== venue.spaceLabel && (
+                    <div className="mt-2 pt-2 border-t border-amber-200">
+                      <p className="text-xs text-muted-foreground">
+                        Space override: <span className="font-medium">{event.spaceLabel}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground p-4 border-2 border-dashed rounded-md text-center">
+                  No venue set
                 </p>
               )}
             </div>
+
+            {!hostOrg && !onlineHostOrg && !venue && (
+              <p className="text-sm text-muted-foreground mt-4">
+                <Link href={`/events/${params.id}/edit`} className="text-blue-600 hover:underline">Edit event</Link> to assign orgs or venue.
+              </p>
+            )}
           </div>
 
           {/* Child Events */}

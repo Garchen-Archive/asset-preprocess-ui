@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, topics, categories, eventTopics, eventCategories, locations, addresses, locationAddresses } from "@/lib/db/schema";
+import { events, topics, categories, eventTopics, eventCategories, organizations, venues, locations, addresses, organizationLocations } from "@/lib/db/schema";
 import { eq, asc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { EditEventForm } from "@/components/edit-event-form";
@@ -38,18 +38,32 @@ export default async function EditEventPage({
         .then((results) => results[0] || null)
     : null;
 
-  // Get all topics and categories
+  // Get all topics, categories, and organizations
   const allTopics = await db.select().from(topics).orderBy(asc(topics.name));
   const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
-  const allLocations = await db.select().from(locations).orderBy(asc(locations.name));
-  const allAddresses = await db.select().from(addresses);
-  const locationAddressLinks = await db
+  const allOrganizations = await db.select().from(organizations).orderBy(asc(organizations.name));
+
+  // Fetch venues with location and address details
+  const allVenues = await db
     .select({
-      locationId: locationAddresses.locationId,
-      addressId: locationAddresses.addressId,
-      isPrimary: locationAddresses.isPrimary,
+      id: venues.id,
+      name: venues.name,
+      spaceLabel: venues.spaceLabel,
+      venueType: venues.venueType,
+      locationId: venues.locationId,
+      locationName: locations.name,
+      locationCode: locations.code,
+      isOnline: locations.isOnline,
+      addressId: venues.addressId,
+      addressLabel: addresses.label,
+      city: addresses.city,
+      country: addresses.country,
+      fullAddress: addresses.fullAddress,
     })
-    .from(locationAddresses);
+    .from(venues)
+    .innerJoin(locations, eq(venues.locationId, locations.id))
+    .leftJoin(addresses, eq(venues.addressId, addresses.id))
+    .orderBy(asc(locations.name), asc(venues.spaceLabel));
 
   // Get currently selected topics for this event
   const selectedEventTopics = await db
@@ -65,6 +79,14 @@ export default async function EditEventPage({
     .innerJoin(categories, eq(eventCategories.categoryId, categories.id))
     .where(eq(eventCategories.eventId, params.id));
 
+  // Get organization-location mappings (to auto-select venue when host org changes)
+  const orgLocationMappings = await db
+    .select({
+      organizationId: organizationLocations.organizationId,
+      locationId: organizationLocations.locationId,
+    })
+    .from(organizationLocations);
+
   return (
     <EditEventForm
       event={event}
@@ -72,9 +94,9 @@ export default async function EditEventPage({
       parentEvent={parentEvent}
       allTopics={allTopics}
       allCategories={allCategories}
-      allLocations={allLocations}
-      allAddresses={allAddresses}
-      locationAddressLinks={locationAddressLinks}
+      allOrganizations={allOrganizations}
+      allVenues={allVenues}
+      orgLocationMappings={orgLocationMappings}
       selectedTopicIds={selectedEventTopics.map(t => t.id)}
       selectedCategoryIds={selectedEventCategories.map(c => c.id)}
     />

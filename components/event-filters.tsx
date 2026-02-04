@@ -11,14 +11,12 @@ interface EventFiltersProps {
   statusFilter: string;
   typeFilter: string;
   sourceFilter: string;
-  locationFilter: string;
   organizerFilter: string;
   hostingCenterFilter: string;
   countryFilter: string;
   locationRawFilter: string;
   metadataSearch: string;
   availableTypes: { type: string | null }[];
-  availableLocations: { id: string; name: string }[];
   availableOrganizers: { id: string; name: string }[];
   availableHostingCenters: string[];
   availableCountries: string[];
@@ -31,22 +29,18 @@ export function EventFilters({
   statusFilter,
   typeFilter,
   sourceFilter,
-  locationFilter,
   organizerFilter,
   hostingCenterFilter,
   countryFilter,
   locationRawFilter,
   metadataSearch,
   availableTypes,
-  availableLocations,
   availableOrganizers,
   availableHostingCenters,
   availableCountries,
   availableLocationTexts,
 }: EventFiltersProps) {
-  const structuredFilterCount =
-    (locationFilter ? 1 : 0) +
-    (organizerFilter ? 1 : 0);
+  const structuredFilterCount = organizerFilter ? 1 : 0;
 
   const metadataFilterCount =
     (hostingCenterFilter ? 1 : 0) +
@@ -60,7 +54,6 @@ export function EventFilters({
     statusFilter ||
     typeFilter ||
     sourceFilter ||
-    locationFilter ||
     organizerFilter ||
     hostingCenterFilter ||
     countryFilter ||
@@ -139,34 +132,16 @@ export function EventFilters({
         </div>
       </div>
 
-      {/* Location & Organizer Filters */}
-      <CollapsibleFilterSection
-        title="Location & Organizer"
-        badge={structuredFilterCount}
-        defaultOpen={structuredFilterCount > 0}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {availableLocations.length > 0 && (
+      {/* Organizer Filter */}
+      {availableOrganizers.length > 0 && (
+        <CollapsibleFilterSection
+          title="Organizer"
+          badge={structuredFilterCount}
+          defaultOpen={structuredFilterCount > 0}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Host Location</label>
-              <select
-                name="location"
-                defaultValue={locationFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">All Host Locations</option>
-                {availableLocations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {availableOrganizers.length > 0 && (
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Organizer</label>
+              <label className="text-sm font-medium mb-1.5 block">Organizer Org</label>
               <select
                 name="organizer"
                 defaultValue={organizerFilter}
@@ -180,9 +155,9 @@ export function EventFilters({
                 ))}
               </select>
             </div>
-          )}
-        </div>
-      </CollapsibleFilterSection>
+          </div>
+        </CollapsibleFilterSection>
+      )}
 
       {/* Sheet Metadata Filters */}
       <CollapsibleFilterSection

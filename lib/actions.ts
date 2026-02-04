@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/db/client";
-import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations, addresses, locationAddresses } from "@/lib/db/schema";
-import { eq, sql, inArray } from "drizzle-orm";
+import { archiveAssets, events, sessions, topics, categories, eventTopics, eventCategories, sessionTopics, sessionCategories, locations, addresses, locationAddresses, organizations, organizationLocations, venues } from "@/lib/db/schema";
+import { eq, sql, inArray, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -91,9 +91,10 @@ export async function deleteAsset(id: string) {
 
 export async function createEvent(prevState: { error: string } | undefined, formData: FormData) {
   const parentEventIdStr = formData.get("parentEventId") as string;
-  const locationIdStr = formData.get("locationId") as string;
-  const organizerIdStr = formData.get("organizerId") as string;
-  const venueAddressIdStr = formData.get("venueAddressId") as string;
+  const hostOrganizationIdStr = formData.get("hostOrganizationId") as string;
+  const organizerOrganizationIdStr = formData.get("organizerOrganizationId") as string;
+  const onlineHostOrganizationIdStr = formData.get("onlineHostOrganizationId") as string;
+  const venueIdStr = formData.get("venueId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -102,9 +103,11 @@ export async function createEvent(prevState: { error: string } | undefined, form
   const data = {
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
-    locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
-    organizerId: organizerIdStr && organizerIdStr !== "" ? organizerIdStr : null,
-    venueAddressId: venueAddressIdStr && venueAddressIdStr !== "" ? venueAddressIdStr : null,
+    hostOrganizationId: hostOrganizationIdStr && hostOrganizationIdStr !== "" ? hostOrganizationIdStr : null,
+    organizerOrganizationId: organizerOrganizationIdStr && organizerOrganizationIdStr !== "" ? organizerOrganizationIdStr : null,
+    onlineHostOrganizationId: onlineHostOrganizationIdStr && onlineHostOrganizationIdStr !== "" ? onlineHostOrganizationIdStr : null,
+    venueId: venueIdStr && venueIdStr !== "" ? venueIdStr : null,
+    spaceLabel: formData.get("spaceLabel") as string || null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
@@ -169,9 +172,10 @@ export async function updateEvent(id: string, formData: FormData) {
   }
 
   const parentEventIdStr = formData.get("parentEventId") as string;
-  const locationIdStr = formData.get("locationId") as string;
-  const organizerIdStr = formData.get("organizerId") as string;
-  const venueAddressIdStr = formData.get("venueAddressId") as string;
+  const hostOrganizationIdStr = formData.get("hostOrganizationId") as string;
+  const organizerOrganizationIdStr = formData.get("organizerOrganizationId") as string;
+  const onlineHostOrganizationIdStr = formData.get("onlineHostOrganizationId") as string;
+  const venueIdStr = formData.get("venueId") as string;
 
   // Extract topic and category IDs from form data
   const topicIds = formData.getAll("topicIds") as string[];
@@ -180,9 +184,11 @@ export async function updateEvent(id: string, formData: FormData) {
   const data = {
     eventName: formData.get("eventName") as string,
     parentEventId: parentEventIdStr && parentEventIdStr !== "" ? parentEventIdStr : null,
-    locationId: locationIdStr && locationIdStr !== "" ? locationIdStr : null,
-    organizerId: organizerIdStr && organizerIdStr !== "" ? organizerIdStr : null,
-    venueAddressId: venueAddressIdStr && venueAddressIdStr !== "" ? venueAddressIdStr : null,
+    hostOrganizationId: hostOrganizationIdStr && hostOrganizationIdStr !== "" ? hostOrganizationIdStr : null,
+    organizerOrganizationId: organizerOrganizationIdStr && organizerOrganizationIdStr !== "" ? organizerOrganizationIdStr : null,
+    onlineHostOrganizationId: onlineHostOrganizationIdStr && onlineHostOrganizationIdStr !== "" ? onlineHostOrganizationIdStr : null,
+    venueId: venueIdStr && venueIdStr !== "" ? venueIdStr : null,
+    spaceLabel: formData.get("spaceLabel") as string || null,
     eventDateStart: formData.get("eventDateStart") as string || null,
     eventDateEnd: formData.get("eventDateEnd") as string || null,
     eventType: formData.get("eventType") as string || null,
@@ -394,23 +400,29 @@ export async function createLocation(formData: FormData) {
     ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
     : null;
 
+  const isOnline = formData.get("isOnline") === "on";
+
   const data = {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
     alternativeNames,
-    city: formData.get("city") as string || null,
-    stateProvince: formData.get("stateProvince") as string || null,
-    country: formData.get("country") as string || null,
-    postalCode: formData.get("postalCode") as string || null,
-    fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
     locationType: formData.get("locationType") as string || null,
+    isOnline,
     description: formData.get("description") as string || null,
     notes: formData.get("notes") as string || null,
   };
 
   const [newLocation] = await db.insert(locations).values(data).returning();
+
+  // Auto-create a default venue for online locations (no address needed)
+  if (isOnline) {
+    await db.insert(venues).values({
+      locationId: newLocation.id,
+      addressId: null,
+      spaceLabel: null,
+      venueType: "online",
+    });
+  }
 
   revalidatePath("/locations");
   redirect(`/locations/${newLocation.id}`);
@@ -422,24 +434,117 @@ export async function updateLocation(id: string, formData: FormData) {
     ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
     : null;
 
+  const isOnline = formData.get("isOnline") === "on";
+
   const data = {
     code: formData.get("code") as string,
     name: formData.get("name") as string,
     alternativeNames,
-    city: formData.get("city") as string || null,
-    stateProvince: formData.get("stateProvince") as string || null,
-    country: formData.get("country") as string || null,
-    postalCode: formData.get("postalCode") as string || null,
-    fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
     locationType: formData.get("locationType") as string || null,
+    isOnline,
     description: formData.get("description") as string || null,
     notes: formData.get("notes") as string || null,
     updatedAt: new Date(),
   };
 
   await db.update(locations).set(data).where(eq(locations.id, id));
+
+  // If changed to online, ensure a venue exists
+  if (isOnline) {
+    const existingVenues = await db
+      .select({ id: venues.id })
+      .from(venues)
+      .where(eq(venues.locationId, id))
+      .limit(1);
+
+    if (existingVenues.length === 0) {
+      await db.insert(venues).values({
+        locationId: id,
+        addressId: null,
+        spaceLabel: null,
+        venueType: "online",
+      });
+    }
+  }
+
+  revalidatePath(`/locations/${id}`);
+  redirect(`/locations/${id}`);
+}
+
+// Update location and its primary address in one action
+export async function updateLocationWithAddress(id: string, formData: FormData) {
+  const alternativeNamesStr = formData.get("alternativeNames") as string;
+  const alternativeNames = alternativeNamesStr
+    ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
+    : null;
+
+  const isOnline = formData.get("isOnline") === "on";
+
+  // Location data
+  const locationData = {
+    code: formData.get("code") as string,
+    name: formData.get("name") as string,
+    alternativeNames,
+    locationType: formData.get("locationType") as string || null,
+    timezone: formData.get("timezone") as string || null,
+    isOnline,
+    description: formData.get("description") as string || null,
+    notes: formData.get("notes") as string || null,
+    updatedAt: new Date(),
+  };
+
+  // Update location
+  await db.update(locations).set(locationData).where(eq(locations.id, id));
+
+  // Update primary address if provided
+  const primaryAddressId = formData.get("primaryAddressId") as string;
+  if (primaryAddressId) {
+    const addressData = {
+      label: formData.get("primaryLabel") as string || null,
+      fullAddress: formData.get("primaryFullAddress") as string || null,
+      city: formData.get("primaryCity") as string || null,
+      stateProvince: formData.get("primaryStateProvince") as string || null,
+      country: formData.get("primaryCountry") as string || null,
+      postalCode: formData.get("primaryPostalCode") as string || null,
+      updatedAt: new Date(),
+    };
+
+    await db.update(addresses).set(addressData).where(eq(addresses.id, primaryAddressId));
+  }
+
+  // Auto-create/update venue if needed
+  const existingVenues = await db
+    .select({ id: venues.id, addressId: venues.addressId })
+    .from(venues)
+    .where(eq(venues.locationId, id));
+
+  if (existingVenues.length === 0) {
+    // No venue exists - create one
+    if (isOnline) {
+      await db.insert(venues).values({
+        locationId: id,
+        addressId: null,
+        spaceLabel: null,
+        venueType: "online",
+      });
+    } else if (primaryAddressId) {
+      await db.insert(venues).values({
+        locationId: id,
+        addressId: primaryAddressId,
+        spaceLabel: null,
+        venueType: "in_person",
+      });
+    }
+  } else if (primaryAddressId) {
+    // Update venue without address to use the primary address
+    const venueWithoutAddress = existingVenues.find(v => !v.addressId);
+    if (venueWithoutAddress) {
+      await db
+        .update(venues)
+        .set({ addressId: primaryAddressId, updatedAt: new Date() })
+        .where(eq(venues.id, venueWithoutAddress.id));
+    }
+  }
 
   revalidatePath(`/locations/${id}`);
   redirect(`/locations/${id}`);
@@ -450,6 +555,60 @@ export async function deleteLocation(id: string) {
 
   revalidatePath("/locations");
   redirect("/locations");
+}
+
+// ============================================================================
+// ORGANIZATION ACTIONS
+// ============================================================================
+
+export async function createOrganization(formData: FormData) {
+  const alternativeNamesStr = formData.get("alternativeNames") as string;
+  const alternativeNames = alternativeNamesStr
+    ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
+    : null;
+
+  const data = {
+    code: formData.get("code") as string,
+    name: formData.get("name") as string,
+    alternativeNames,
+    orgType: formData.get("orgType") as string || null,
+    description: formData.get("description") as string || null,
+    notes: formData.get("notes") as string || null,
+  };
+
+  const [newOrg] = await db.insert(organizations).values(data).returning();
+
+  revalidatePath("/organizations");
+  redirect(`/organizations/${newOrg.id}`);
+}
+
+export async function updateOrganization(id: string, formData: FormData) {
+  const alternativeNamesStr = formData.get("alternativeNames") as string;
+  const alternativeNames = alternativeNamesStr
+    ? alternativeNamesStr.split(",").map(n => n.trim()).filter(Boolean)
+    : null;
+
+  const data = {
+    code: formData.get("code") as string,
+    name: formData.get("name") as string,
+    alternativeNames,
+    orgType: formData.get("orgType") as string || null,
+    description: formData.get("description") as string || null,
+    notes: formData.get("notes") as string || null,
+    updatedAt: new Date(),
+  };
+
+  await db.update(organizations).set(data).where(eq(organizations.id, id));
+
+  revalidatePath(`/organizations/${id}`);
+  redirect(`/organizations/${id}`);
+}
+
+export async function deleteOrganization(id: string) {
+  await db.delete(organizations).where(eq(organizations.id, id));
+
+  revalidatePath("/organizations");
+  redirect("/organizations");
 }
 
 // ============================================================================
@@ -539,11 +698,41 @@ export async function createAddressAndLinkToLocation(locationId: string, formDat
     effectiveTo: formData.get("effectiveTo") as string || null,
   });
 
+  // Auto-create default venue if this is primary address and no venue exists yet
+  if (isPrimary) {
+    const existingVenues = await db
+      .select({ id: venues.id })
+      .from(venues)
+      .where(eq(venues.locationId, locationId))
+      .limit(1);
+
+    if (existingVenues.length === 0) {
+      // No venue exists - create a default one with this address
+      await db.insert(venues).values({
+        locationId,
+        addressId: newAddress.id,
+        spaceLabel: null,
+        venueType: "in_person",
+      });
+    }
+  }
+
   revalidatePath(`/locations/${locationId}`);
   redirect(`/locations/${locationId}`);
 }
 
 export async function setLocationAddressPrimary(linkId: string, locationId: string) {
+  // Get the address ID from the link
+  const [link] = await db
+    .select({ addressId: locationAddresses.addressId })
+    .from(locationAddresses)
+    .where(eq(locationAddresses.id, linkId))
+    .limit(1);
+
+  if (!link) {
+    throw new Error("Location address link not found");
+  }
+
   // Unset existing primary for this location
   await db
     .update(locationAddresses)
@@ -555,6 +744,31 @@ export async function setLocationAddressPrimary(linkId: string, locationId: stri
     .update(locationAddresses)
     .set({ isPrimary: true, updatedAt: new Date() })
     .where(eq(locationAddresses.id, linkId));
+
+  // Check if there's a venue without an address that should use this new primary
+  const existingVenues = await db
+    .select({ id: venues.id, addressId: venues.addressId })
+    .from(venues)
+    .where(eq(venues.locationId, locationId));
+
+  if (existingVenues.length === 0) {
+    // No venue exists - create one with this address
+    await db.insert(venues).values({
+      locationId,
+      addressId: link.addressId,
+      spaceLabel: null,
+      venueType: "in_person",
+    });
+  } else {
+    // Check if there's a venue with no address - update it
+    const venueWithoutAddress = existingVenues.find(v => !v.addressId);
+    if (venueWithoutAddress) {
+      await db
+        .update(venues)
+        .set({ addressId: link.addressId, updatedAt: new Date() })
+        .where(eq(venues.id, venueWithoutAddress.id));
+    }
+  }
 
   revalidatePath(`/locations/${locationId}`);
   redirect(`/locations/${locationId}`);
@@ -609,6 +823,42 @@ export async function updateLocationAddressLink(linkId: string, locationId: stri
     updatedAt: new Date(),
   }).where(eq(locationAddresses.id, linkId));
 
+  // Auto-create/update venue if setting as primary
+  if (isPrimary) {
+    // Get the address ID from this link
+    const [link] = await db
+      .select({ addressId: locationAddresses.addressId })
+      .from(locationAddresses)
+      .where(eq(locationAddresses.id, linkId))
+      .limit(1);
+
+    if (link) {
+      const existingVenues = await db
+        .select({ id: venues.id, addressId: venues.addressId })
+        .from(venues)
+        .where(eq(venues.locationId, locationId));
+
+      if (existingVenues.length === 0) {
+        // No venue exists - create one
+        await db.insert(venues).values({
+          locationId,
+          addressId: link.addressId,
+          spaceLabel: null,
+          venueType: "in_person",
+        });
+      } else {
+        // Update venue without address to use this one
+        const venueWithoutAddress = existingVenues.find(v => !v.addressId);
+        if (venueWithoutAddress) {
+          await db
+            .update(venues)
+            .set({ addressId: link.addressId, updatedAt: new Date() })
+            .where(eq(venues.id, venueWithoutAddress.id));
+        }
+      }
+    }
+  }
+
   revalidatePath(`/locations/${locationId}`);
   redirect(`/locations/${locationId}`);
 }
@@ -647,6 +897,33 @@ export async function updateAddressAndLink(addressId: string, linkId: string, lo
     effectiveTo: formData.get("effectiveTo") as string || null,
     updatedAt: new Date(),
   }).where(eq(locationAddresses.id, linkId));
+
+  // Auto-create/update venue if setting as primary
+  if (isPrimary) {
+    const existingVenues = await db
+      .select({ id: venues.id, addressId: venues.addressId })
+      .from(venues)
+      .where(eq(venues.locationId, locationId));
+
+    if (existingVenues.length === 0) {
+      // No venue exists - create one
+      await db.insert(venues).values({
+        locationId,
+        addressId,
+        spaceLabel: null,
+        venueType: "in_person",
+      });
+    } else {
+      // Update venue without address to use this one
+      const venueWithoutAddress = existingVenues.find(v => !v.addressId);
+      if (venueWithoutAddress) {
+        await db
+          .update(venues)
+          .set({ addressId, updatedAt: new Date() })
+          .where(eq(venues.id, venueWithoutAddress.id));
+      }
+    }
+  }
 
   revalidatePath(`/locations/${locationId}`);
   revalidatePath(`/addresses/${addressId}`);
@@ -754,8 +1031,9 @@ export async function bulkUpdateEvents({
 }: {
   eventIds: string[];
   updates: {
-    locationId?: string | null;
-    organizerId?: string | null;
+    hostOrganizationId?: string | null;
+    organizerOrganizationId?: string | null;
+    venueId?: string | null;
     eventType?: string | null;
     catalogingStatus?: string | null;
   };
@@ -790,4 +1068,264 @@ export async function bulkUpdateEvents({
     console.error("Bulk update events error:", error);
     return { success: false, error: error.message || "Failed to update events" };
   }
+}
+
+// ============================================================================
+// ORGANIZATION CSV IMPORT (Upsert with merge/fill-only for addresses)
+// ============================================================================
+
+interface CSVRow {
+  Code: string;
+  Name: string;
+  Type: string;
+  Alternative_Names?: string;
+  Location_Name: string;
+  Location_Type: string;
+  Location_Full_Address: string;
+  Location_City: string;
+  Location_Country: string;
+  Location_State: string;
+  Location_Postal_Code: string;
+}
+
+export async function importOrganizationsFromCSV(rows: CSVRow[]) {
+  const errors: string[] = [];
+  let created = 0;
+  let updated = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 2; // Account for header row and 0-indexing
+
+    try {
+      // Validate required fields
+      if (!row.Code?.trim()) {
+        errors.push(`Row ${rowNum}: Missing required field 'Code'`);
+        continue;
+      }
+      if (!row.Name?.trim()) {
+        errors.push(`Row ${rowNum}: Missing required field 'Name'`);
+        continue;
+      }
+
+      const orgCode = row.Code.trim();
+      const orgName = row.Name.trim();
+      const orgType = row.Type?.trim() || null;
+      const alternativeNames = row.Alternative_Names?.trim()
+        ? row.Alternative_Names.split(",").map(n => n.trim()).filter(Boolean)
+        : null;
+      const locationName = row.Location_Name?.trim() || orgName;
+      const locationType = row.Location_Type?.trim() || null;
+
+      // Check if organization with this code already exists
+      const [existingOrg] = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.code, orgCode))
+        .limit(1);
+
+      let orgId: string;
+      let isNewOrg = false;
+
+      if (existingOrg) {
+        // UPDATE existing organization
+        orgId = existingOrg.id;
+        await db.update(organizations).set({
+          name: orgName,
+          orgType: orgType,
+          alternativeNames: alternativeNames || existingOrg.alternativeNames,
+          updatedAt: new Date(),
+        }).where(eq(organizations.id, orgId));
+      } else {
+        // CREATE new organization
+        const [newOrg] = await db.insert(organizations).values({
+          code: orgCode,
+          name: orgName,
+          orgType: orgType,
+          alternativeNames: alternativeNames,
+        }).returning();
+        orgId = newOrg.id;
+        isNewOrg = true;
+      }
+
+      // Find primary location for this org, or the location with matching code
+      const locationCode = `${orgCode}-LOC`;
+
+      // First check if org already has a primary location
+      const [existingOrgLocation] = await db
+        .select({
+          locationId: organizationLocations.locationId,
+          location: locations,
+        })
+        .from(organizationLocations)
+        .innerJoin(locations, eq(organizationLocations.locationId, locations.id))
+        .where(and(
+          eq(organizationLocations.organizationId, orgId),
+          eq(organizationLocations.isPrimary, true)
+        ))
+        .limit(1);
+
+      let locationId: string;
+
+      if (existingOrgLocation) {
+        // Update existing primary location
+        locationId = existingOrgLocation.locationId;
+        await db.update(locations).set({
+          name: locationName,
+          locationType: locationType || existingOrgLocation.location.locationType,
+          updatedAt: new Date(),
+        }).where(eq(locations.id, locationId));
+      } else {
+        // Check if location with this code exists (but not linked to this org)
+        const [existingLoc] = await db
+          .select()
+          .from(locations)
+          .where(eq(locations.code, locationCode))
+          .limit(1);
+
+        if (existingLoc) {
+          locationId = existingLoc.id;
+          // Update the location
+          await db.update(locations).set({
+            name: locationName,
+            locationType: locationType || existingLoc.locationType,
+            updatedAt: new Date(),
+          }).where(eq(locations.id, locationId));
+        } else {
+          // Create new location
+          const [newLocation] = await db.insert(locations).values({
+            code: locationCode,
+            name: locationName,
+            locationType: locationType,
+          }).returning();
+          locationId = newLocation.id;
+        }
+
+        // Link organization to location (as primary)
+        // First check if link already exists
+        const [existingLink] = await db
+          .select()
+          .from(organizationLocations)
+          .where(and(
+            eq(organizationLocations.organizationId, orgId),
+            eq(organizationLocations.locationId, locationId)
+          ))
+          .limit(1);
+
+        if (!existingLink) {
+          await db.insert(organizationLocations).values({
+            organizationId: orgId,
+            locationId: locationId,
+            isPrimary: true,
+            role: "HQ",
+          });
+        } else if (!existingLink.isPrimary) {
+          // Update to make it primary
+          await db.update(organizationLocations).set({
+            isPrimary: true,
+            updatedAt: new Date(),
+          }).where(eq(organizationLocations.id, existingLink.id));
+        }
+      }
+
+      // Handle address with merge/fill-only logic
+      // Find primary address for this location
+      const [existingLocAddress] = await db
+        .select({
+          linkId: locationAddresses.id,
+          address: addresses,
+        })
+        .from(locationAddresses)
+        .innerJoin(addresses, eq(locationAddresses.addressId, addresses.id))
+        .where(and(
+          eq(locationAddresses.locationId, locationId),
+          eq(locationAddresses.isPrimary, true)
+        ))
+        .limit(1);
+
+      let addressId: string;
+
+      if (existingLocAddress) {
+        // MERGE/FILL-ONLY: Only update empty fields
+        addressId = existingLocAddress.address.id;
+        const existingAddr = existingLocAddress.address;
+
+        const mergeUpdates: Record<string, any> = { updatedAt: new Date() };
+
+        // Only fill in empty fields
+        if (!existingAddr.label && locationName) {
+          mergeUpdates.label = locationName;
+        }
+        if (!existingAddr.fullAddress && row.Location_Full_Address?.trim()) {
+          mergeUpdates.fullAddress = row.Location_Full_Address.trim();
+        }
+        if (!existingAddr.city && row.Location_City?.trim()) {
+          mergeUpdates.city = row.Location_City.trim();
+        }
+        if (!existingAddr.stateProvince && row.Location_State?.trim()) {
+          mergeUpdates.stateProvince = row.Location_State.trim();
+        }
+        if (!existingAddr.country && row.Location_Country?.trim()) {
+          mergeUpdates.country = row.Location_Country.trim();
+        }
+        if (!existingAddr.postalCode && row.Location_Postal_Code?.trim()) {
+          mergeUpdates.postalCode = row.Location_Postal_Code.trim();
+        }
+
+        await db.update(addresses).set(mergeUpdates).where(eq(addresses.id, addressId));
+      } else {
+        // No primary address exists - create new one
+        const [newAddress] = await db.insert(addresses).values({
+          label: locationName,
+          fullAddress: row.Location_Full_Address?.trim() || null,
+          city: row.Location_City?.trim() || null,
+          stateProvince: row.Location_State?.trim() || null,
+          country: row.Location_Country?.trim() || null,
+          postalCode: row.Location_Postal_Code?.trim() || null,
+        }).returning();
+        addressId = newAddress.id;
+
+        // Link location to address (as primary)
+        await db.insert(locationAddresses).values({
+          locationId: locationId,
+          addressId: addressId,
+          isPrimary: true,
+        });
+      }
+
+      // Ensure a venue exists for this location+address
+      const [existingVenue] = await db
+        .select({ id: venues.id })
+        .from(venues)
+        .where(eq(venues.locationId, locationId))
+        .limit(1);
+
+      if (!existingVenue) {
+        await db.insert(venues).values({
+          locationId: locationId,
+          addressId: addressId,
+          venueType: "in_person",
+        });
+      }
+
+      if (isNewOrg) {
+        created++;
+      } else {
+        updated++;
+      }
+    } catch (error: any) {
+      // Check for unique constraint violation
+      if (error?.code === "23505") {
+        errors.push(`Row ${rowNum}: Duplicate entry found - ${error.detail || error.message}`);
+      } else {
+        errors.push(`Row ${rowNum}: ${error.message || "Unknown error"}`);
+      }
+    }
+  }
+
+  revalidatePath("/organizations");
+  revalidatePath("/locations");
+  revalidatePath("/addresses");
+
+  return { created, updated, errors };
 }

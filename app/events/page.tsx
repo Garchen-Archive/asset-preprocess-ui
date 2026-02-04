@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { events, locations } from "@/lib/db/schema";
+import { events, organizations } from "@/lib/db/schema";
 import { asc, desc, ilike, eq, and, sql } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ export default async function EventsPage({
     type?: string;
     view?: string;
     source?: string;
-    location?: string;
     organizer?: string;
     hostingCenter?: string;
     country?: string;
@@ -34,7 +33,6 @@ export default async function EventsPage({
   const typeFilter = searchParams.type || "";
   const viewFilter = searchParams.view || "all"; // Default to all events
   const sourceFilter = searchParams.source || "";
-  const locationFilter = searchParams.location || "";
   const organizerFilter = searchParams.organizer || "";
   const hostingCenterFilter = searchParams.hostingCenter || "";
   const countryFilter = searchParams.country || "";
@@ -78,13 +76,9 @@ export default async function EventsPage({
     conditions.push(sql`${events.parentEventId} IS NULL`);
   }
 
-  // Location & organizer filters
-  if (locationFilter) {
-    conditions.push(eq(events.locationId, locationFilter));
-  }
-
+  // Organizer filter
   if (organizerFilter) {
-    conditions.push(eq(events.organizerId, organizerFilter));
+    conditions.push(eq(events.organizerOrganizationId, organizerFilter));
   }
 
   // Additional metadata filters
@@ -121,11 +115,6 @@ export default async function EventsPage({
          FROM events e2
          WHERE e2.id = events.parent_event_id)
       `.as('parent_event_name'),
-      locationName: sql<string>`
-        (SELECT l.name
-         FROM locations l
-         WHERE l.id = events.location_id)
-      `.as('location_name'),
       sessionCount: sql<number>`
         COALESCE(
           (SELECT COUNT(*)
@@ -166,8 +155,8 @@ export default async function EventsPage({
     .limit(perPage)
     .offset(offset);
 
-  // Fetch distinct values for filter dropdowns + all locations for bulk edit
-  const [types, hostLocations, organizers, hostingCenters, countries, locationTexts, allLocations] = await Promise.all([
+  // Fetch distinct values for filter dropdowns + organizations for bulk edit
+  const [types, organizers, hostingCenters, countries, locationTexts, allOrganizations] = await Promise.all([
     // Distinct event types
     db
       .selectDistinct({ type: events.eventType })
@@ -175,19 +164,12 @@ export default async function EventsPage({
       .where(sql`${events.eventType} IS NOT NULL AND ${events.eventType} != ''`)
       .orderBy(events.eventType),
 
-    // Distinct host locations (locations referenced by events.location_id)
+    // Distinct organizers (organizations referenced by events.organizer_organization_id)
     db
-      .selectDistinct({ id: locations.id, name: locations.name })
-      .from(locations)
-      .innerJoin(events, eq(events.locationId, locations.id))
-      .orderBy(locations.name),
-
-    // Distinct organizers (locations referenced by events.organizer_id)
-    db
-      .selectDistinct({ id: locations.id, name: locations.name })
-      .from(locations)
-      .innerJoin(events, eq(events.organizerId, locations.id))
-      .orderBy(locations.name),
+      .selectDistinct({ id: organizations.id, name: organizations.name })
+      .from(organizations)
+      .innerJoin(events, eq(events.organizerOrganizationId, organizations.id))
+      .orderBy(organizations.name),
 
     // Distinct hosting_center values from additional_metadata
     db
@@ -216,11 +198,11 @@ export default async function EventsPage({
       .where(sql`${events.additionalMetadata}->>'location_raw' IS NOT NULL AND ${events.additionalMetadata}->>'location_raw' != ''`)
       .orderBy(sql`${events.additionalMetadata}->>'location_raw'`),
 
-    // All locations for bulk edit modal
+    // All organizations for bulk edit modal
     db
-      .select({ id: locations.id, name: locations.name })
-      .from(locations)
-      .orderBy(locations.name),
+      .select({ id: organizations.id, name: organizations.name })
+      .from(organizations)
+      .orderBy(organizations.name),
   ]);
 
   return (
@@ -244,14 +226,12 @@ export default async function EventsPage({
         statusFilter={statusFilter}
         typeFilter={typeFilter}
         sourceFilter={sourceFilter}
-        locationFilter={locationFilter}
         organizerFilter={organizerFilter}
         hostingCenterFilter={hostingCenterFilter}
         countryFilter={countryFilter}
         locationRawFilter={locationRawFilter}
         metadataSearch={metadataSearch}
         availableTypes={types}
-        availableLocations={hostLocations}
         availableOrganizers={organizers}
         availableHostingCenters={hostingCenters.map((h) => h.value).filter(Boolean)}
         availableCountries={countries.map((c) => c.value).filter(Boolean)}
@@ -266,7 +246,7 @@ export default async function EventsPage({
 
       <EventsPageClient
         eventsList={eventsList}
-        locations={allLocations}
+        organizations={allOrganizations}
         availableTypes={types.map((t) => t.type).filter(Boolean) as string[]}
         offset={offset}
         sortBy={sortBy}
@@ -285,7 +265,6 @@ export default async function EventsPage({
           ...(statusFilter && { status: statusFilter }),
           ...(typeFilter && { type: typeFilter }),
           ...(sourceFilter && { source: sourceFilter }),
-          ...(locationFilter && { location: locationFilter }),
           ...(organizerFilter && { organizer: organizerFilter }),
           ...(hostingCenterFilter && { hostingCenter: hostingCenterFilter }),
           ...(countryFilter && { country: countryFilter }),

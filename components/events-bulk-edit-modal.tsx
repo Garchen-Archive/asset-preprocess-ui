@@ -6,7 +6,7 @@ import { bulkUpdateEvents } from "@/lib/actions";
 
 interface EventsBulkEditModalProps {
   selectedEventIds: string[];
-  locations: { id: string; name: string }[];
+  organizations: { id: string; name: string }[];
   availableTypes: string[];
   onClose: () => void;
   onSuccess: () => void;
@@ -21,7 +21,7 @@ const CATALOGING_STATUS_OPTIONS = [
 
 export function EventsBulkEditModal({
   selectedEventIds,
-  locations,
+  organizations,
   availableTypes,
   onClose,
   onSuccess,
@@ -33,8 +33,8 @@ export function EventsBulkEditModal({
   const [enabledFields, setEnabledFields] = useState<Record<string, boolean>>({});
 
   // Field values
-  const [locationId, setLocationId] = useState("");
-  const [organizerId, setOrganizerId] = useState("");
+  const [hostOrganizationId, setHostOrganizationId] = useState("");
+  const [organizerOrganizationId, setOrganizerOrganizationId] = useState("");
   const [eventType, setEventType] = useState("");
   const [catalogingStatus, setCatalogingStatus] = useState("Not Started");
 
@@ -49,8 +49,8 @@ export function EventsBulkEditModal({
     try {
       const updates: Record<string, unknown> = {};
 
-      if (enabledFields.locationId) updates.locationId = locationId || null;
-      if (enabledFields.organizerId) updates.organizerId = organizerId || null;
+      if (enabledFields.hostOrganizationId) updates.hostOrganizationId = hostOrganizationId || null;
+      if (enabledFields.organizerOrganizationId) updates.organizerOrganizationId = organizerOrganizationId || null;
       if (enabledFields.eventType) updates.eventType = eventType || null;
       if (enabledFields.catalogingStatus) updates.catalogingStatus = catalogingStatus || null;
 
@@ -118,42 +118,42 @@ export function EventsBulkEditModal({
             </div>
           </div>
 
-          {/* Location Section */}
+          {/* Orgs Section */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Location</h3>
+            <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Orgs</h3>
 
             <FieldRow
-              label="Host Location"
-              enabled={enabledFields.locationId}
-              onToggle={() => toggleField("locationId")}
+              label="Host Org"
+              enabled={enabledFields.hostOrganizationId}
+              onToggle={() => toggleField("hostOrganizationId")}
             >
               <select
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                disabled={!enabledFields.locationId}
+                value={hostOrganizationId}
+                onChange={(e) => setHostOrganizationId(e.target.value)}
+                disabled={!enabledFields.hostOrganizationId}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
               >
                 <option value="">— None —</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
                 ))}
               </select>
             </FieldRow>
 
             <FieldRow
-              label="Organizer"
-              enabled={enabledFields.organizerId}
-              onToggle={() => toggleField("organizerId")}
+              label="Organizer Org"
+              enabled={enabledFields.organizerOrganizationId}
+              onToggle={() => toggleField("organizerOrganizationId")}
             >
               <select
-                value={organizerId}
-                onChange={(e) => setOrganizerId(e.target.value)}
-                disabled={!enabledFields.organizerId}
+                value={organizerOrganizationId}
+                onChange={(e) => setOrganizerOrganizationId(e.target.value)}
+                disabled={!enabledFields.organizerOrganizationId}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
               >
                 <option value="">— None —</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
                 ))}
               </select>
             </FieldRow>

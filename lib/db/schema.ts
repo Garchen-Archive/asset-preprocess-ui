@@ -122,8 +122,12 @@ export const events = pgTable("events", {
   eventType: text("event_type"),
   parentEventId: uuid("parent_event_id").references((): any => events.id, { onDelete: "set null" }), // Self-referential
   locationId: uuid("location_id").references(() => locations.id, { onDelete: "set null" }),
-  organizerId: uuid("organizer_id").references(() => locations.id, { onDelete: "set null" }),
-  venueAddressId: uuid("venue_address_id").references(() => addresses.id, { onDelete: "set null" }),
+  organizerOrganizationId: uuid("organizer_organization_id").references(() => organizations.id, { onDelete: "set null" }),
+  hostOrganizationId: uuid("host_organization_id").references(() => organizations.id, { onDelete: "set null" }),
+  onlineHostOrganizationId: uuid("online_host_organization_id").references(() => organizations.id, { onDelete: "set null" }),
+  venueId: uuid("venue_id").references(() => venues.id, { onDelete: "set null" }),
+  venueAddressId: uuid("venue_address_id").references(() => addresses.id, { onDelete: "set null" }), // DEPRECATED: Use venueId
+  spaceLabel: text("space_label"), // Ad-hoc room detail (e.g., "Main Hall", "Room 201")
   category: text("category"), // Comma-delimited categories
   topic: text("topic"), // Comma-delimited topics
   eventDescription: text("event_description"),
@@ -151,12 +155,14 @@ export const sessions = pgTable("sessions", {
   sessionName: text("session_name").notNull(),
   sessionDate: date("session_date", { mode: "string" }),
   sessionTime: text("session_time"), // Time of day: morning, afternoon, evening, night
-  sessionStartTime: time("session_start_time"), // New field
-  sessionEndTime: time("session_end_time"), // New field
+  sessionStartTime: time("session_start_time"),
+  sessionEndTime: time("session_end_time"),
   sequenceInEvent: integer("sequence_in_event"),
   topic: text("topic"), // Renamed from primary_topic
   category: text("category"),
   sessionDescription: text("session_description"),
+  venueId: uuid("venue_id").references(() => venues.id, { onDelete: "set null" }), // Optional override of event's venue
+  spaceLabel: text("space_label"), // Ad-hoc room detail (session-level override)
   durationEstimated: text("duration_estimated"),
   assetCount: integer("asset_count").default(0),
   hasAssets: boolean("has_assets").default(false),
@@ -284,7 +290,29 @@ export type SessionCategory = typeof sessionCategories.$inferSelect;
 export type NewSessionCategory = typeof sessionCategories.$inferInsert;
 
 // ============================================================================
-// LOCATIONS
+// ORGANIZATIONS (renamed from locations)
+// Legal or administrative entities (organizers, hosts, sponsors)
+// ============================================================================
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  alternativeNames: text("alternative_names").array(),
+  orgType: text("org_type"),
+  description: text("description"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export type Organization = typeof organizations.$inferSelect;
+export type NewOrganization = typeof organizations.$inferInsert;
+
+// ============================================================================
+// LOCATIONS (site identity)
+// Stable site where events occur (campus, retreat land, online platform)
 // ============================================================================
 
 export const locations = pgTable("locations", {
@@ -292,14 +320,9 @@ export const locations = pgTable("locations", {
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
   alternativeNames: text("alternative_names").array(),
-  city: text("city"),
-  stateProvince: text("state_province"),
-  country: text("country"),
-  postalCode: text("postal_code"),
-  fullAddress: text("full_address"),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-  locationType: text("location_type"),
+  locationType: text("location_type"), // center, campus, retreat_site, hotel, online
+  isOnline: boolean("is_online").default(false),
+  timezone: text("timezone"), // e.g., 'America/Phoenix', 'Asia/Taipei'
   description: text("description"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -350,3 +373,42 @@ export const locationAddresses = pgTable("location_addresses", {
 
 export type LocationAddress = typeof locationAddresses.$inferSelect;
 export type NewLocationAddress = typeof locationAddresses.$inferInsert;
+
+// ============================================================================
+// ORGANIZATION_LOCATIONS (junction table)
+// Links organizations to their locations with role and primary designation
+// ============================================================================
+
+export const organizationLocations = pgTable("organization_locations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  locationId: uuid("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
+  role: text("role"), // HQ, branch, temporary (not surfaced in UI yet)
+  isPrimary: boolean("is_primary").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type OrganizationLocation = typeof organizationLocations.$inferSelect;
+export type NewOrganizationLocation = typeof organizationLocations.$inferInsert;
+
+// ============================================================================
+// VENUES
+// Event-ready place: Location + Address + optional space label
+// ============================================================================
+
+export const venues = pgTable("venues", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  locationId: uuid("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
+  addressId: uuid("address_id").references(() => addresses.id, { onDelete: "set null" }), // Optional (null for online)
+  spaceLabel: text("space_label"), // e.g., "Main Hall", "Room 201"
+  name: text("name"), // Optional override name
+  venueType: text("venue_type"), // hall, auditorium, outdoor, online_room
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export type Venue = typeof venues.$inferSelect;
+export type NewVenue = typeof venues.$inferInsert;

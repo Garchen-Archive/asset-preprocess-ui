@@ -10,7 +10,6 @@ import type { Event } from "@/lib/db/schema";
 type EventRow = {
   event: Event;
   parentEventName: string | null;
-  locationName: string | null;
   sessionCount: number;
   assetCount: number;
   childEventCount: number;
@@ -18,7 +17,7 @@ type EventRow = {
 
 type EventsPageClientProps = {
   eventsList: EventRow[];
-  locations: { id: string; name: string }[];
+  organizations: { id: string; name: string }[];
   availableTypes: string[];
   offset: number;
   sortBy: string;
@@ -28,7 +27,7 @@ type EventsPageClientProps = {
 
 export function EventsPageClient({
   eventsList,
-  locations,
+  organizations,
   availableTypes,
   offset,
   sortBy,
@@ -146,7 +145,6 @@ export function EventsPageClient({
               <SortableHeader column="eventName">Event Name</SortableHeader>
               <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
               <SortableHeader column="eventDateStart">Date Range</SortableHeader>
-              <th className="px-4 py-3 text-left text-sm font-medium">Location</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Child Events</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Sessions</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Assets</th>
@@ -155,12 +153,11 @@ export function EventsPageClient({
             </tr>
           </thead>
           <tbody>
-            {eventsList.map(({ event, parentEventName, locationName, sessionCount, assetCount, childEventCount }, index) => (
+            {eventsList.map(({ event, parentEventName, sessionCount, assetCount, childEventCount }, index) => (
               <ExpandableEventRow
                 key={event.id}
                 event={event}
                 parentEventName={parentEventName}
-                locationName={locationName}
                 childEventCount={childEventCount}
                 sessionCount={sessionCount}
                 assetCount={assetCount}
@@ -183,7 +180,7 @@ export function EventsPageClient({
       {showBulkEditModal && (
         <EventsBulkEditModal
           selectedEventIds={selectedEventIds}
-          locations={locations}
+          organizations={organizations}
           availableTypes={availableTypes}
           onClose={() => setShowBulkEditModal(false)}
           onSuccess={handleBulkEditSuccess}

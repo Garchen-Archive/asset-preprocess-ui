@@ -36,9 +36,21 @@ export default function RootLayout({
                   <a href="/assets" className="text-sm font-medium hover:underline">
                     Assets
                   </a>
-                  <a href="/locations" className="text-sm font-medium hover:underline">
-                    Locations
-                  </a>
+                  <div className="relative group">
+                    <a href="/organizations" className="text-sm font-medium hover:underline">
+                      Orgs
+                    </a>
+                    <div className="absolute left-0 top-full pt-1 hidden group-hover:block z-50">
+                      <div className="bg-background border rounded-md shadow-lg py-1 min-w-[140px]">
+                        <a href="/organizations" className="block px-4 py-2 text-sm hover:bg-muted">
+                          All Orgs
+                        </a>
+                        <a href="/locations" className="block px-4 py-2 text-sm hover:bg-muted">
+                          Locations
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                   <a href="/taxonomy" className="text-sm font-medium hover:underline">
                     Topics & Categories
                   </a>
