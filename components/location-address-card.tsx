@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ export function LocationAddressTable({
   addresses: LinkedAddress[];
   locationId: string;
 }) {
+  const [isPending, startTransition] = useTransition();
   const hasPrimaryAddress = addresses.some((a) => a.isPrimary);
 
   const handleSetPrimary = (linkId: string) => {
@@ -36,7 +38,9 @@ export function LocationAddressTable({
       );
       if (!confirmed) return;
     }
-    setLocationAddressPrimary(linkId, locationId);
+    startTransition(() => {
+      setLocationAddressPrimary(linkId, locationId);
+    });
   };
 
   return (
@@ -87,9 +91,10 @@ export function LocationAddressTable({
                 ) : (
                   <button
                     onClick={() => handleSetPrimary(addr.linkId)}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                    disabled={isPending}
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50"
                   >
-                    Set Primary
+                    {isPending ? "Setting..." : "Set Primary"}
                   </button>
                 )}
               </td>

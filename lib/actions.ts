@@ -6,6 +6,12 @@ import { eq, sql, inArray, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+function parseCoord(value: string | null): number | null {
+  if (!value) return null;
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function updateAsset(id: string, formData: FormData) {
   // Parse additional metadata JSON
   let additionalMetadata = null;
@@ -623,8 +629,8 @@ export async function createAddress(formData: FormData) {
     country: formData.get("country") as string || null,
     postalCode: formData.get("postalCode") as string || null,
     fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    latitude: parseCoord(formData.get("latitude") as string),
+    longitude: parseCoord(formData.get("longitude") as string),
     notes: formData.get("notes") as string || null,
   };
 
@@ -642,8 +648,8 @@ export async function updateAddress(id: string, formData: FormData) {
     country: formData.get("country") as string || null,
     postalCode: formData.get("postalCode") as string || null,
     fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    latitude: parseCoord(formData.get("latitude") as string),
+    longitude: parseCoord(formData.get("longitude") as string),
     notes: formData.get("notes") as string || null,
     updatedAt: new Date(),
   };
@@ -676,8 +682,8 @@ export async function createAddressAndLinkToLocation(locationId: string, formDat
     country: formData.get("country") as string || null,
     postalCode: formData.get("postalCode") as string || null,
     fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    latitude: parseCoord(formData.get("latitude") as string),
+    longitude: parseCoord(formData.get("longitude") as string),
     notes: formData.get("notes") as string || null,
   }).returning();
 
@@ -874,8 +880,8 @@ export async function updateAddressAndLink(addressId: string, linkId: string, lo
     country: formData.get("country") as string || null,
     postalCode: formData.get("postalCode") as string || null,
     fullAddress: formData.get("fullAddress") as string || null,
-    latitude: formData.get("latitude") ? parseFloat(formData.get("latitude") as string) : null,
-    longitude: formData.get("longitude") ? parseFloat(formData.get("longitude") as string) : null,
+    latitude: parseCoord(formData.get("latitude") as string),
+    longitude: parseCoord(formData.get("longitude") as string),
     notes: formData.get("notes") as string || null,
     updatedAt: new Date(),
   };

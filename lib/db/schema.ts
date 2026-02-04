@@ -364,7 +364,7 @@ export const locationAddresses = pgTable("location_addresses", {
   id: uuid("id").defaultRandom().primaryKey(),
   locationId: uuid("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
   addressId: uuid("address_id").notNull().references(() => addresses.id, { onDelete: "cascade" }),
-  isPrimary: boolean("is_primary").default(false),
+  isPrimary: boolean("is_primary").notNull().default(false),
   effectiveFrom: date("effective_from", { mode: "string" }),
   effectiveTo: date("effective_to", { mode: "string" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -384,7 +384,7 @@ export const organizationLocations = pgTable("organization_locations", {
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   locationId: uuid("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
   role: text("role"), // HQ, branch, temporary (not surfaced in UI yet)
-  isPrimary: boolean("is_primary").default(false),
+  isPrimary: boolean("is_primary").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
