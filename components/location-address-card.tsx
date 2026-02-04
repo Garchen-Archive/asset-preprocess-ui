@@ -73,7 +73,7 @@ export function LocationAddressTable({
               <td className="px-4 py-3 text-sm">
                 {addr.effectiveFrom || addr.effectiveTo ? (
                   <span className="text-xs">
-                    {addr.effectiveFrom && addr.effectiveFrom}
+                    {addr.effectiveFrom}
                     {addr.effectiveFrom && addr.effectiveTo && " — "}
                     {addr.effectiveTo ? addr.effectiveTo : addr.effectiveFrom ? " (Current)" : ""}
                   </span>
