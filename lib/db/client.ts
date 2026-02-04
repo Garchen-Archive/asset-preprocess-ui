@@ -6,6 +6,8 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-// Disable prefetch for Vercel serverless functions
-const client = postgres(process.env.DATABASE_URL, { prepare: false });
+// Serverless-friendly config:
+// - prepare: false — required for PgBouncer/Supavisor transaction mode
+// - max: 1 — each serverless invocation uses a single connection
+const client = postgres(process.env.DATABASE_URL, { prepare: false, max: 1 });
 export const db = drizzle(client, { schema });
