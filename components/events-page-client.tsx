@@ -17,7 +17,7 @@ type EventRow = {
 
 type EventsPageClientProps = {
   eventsList: EventRow[];
-  organizations: { id: string; name: string }[];
+  organizations: { id: string; code: string; name: string }[];
   availableTypes: string[];
   offset: number;
   sortBy: string;
