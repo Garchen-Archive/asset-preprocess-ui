@@ -2,16 +2,22 @@
 
 import { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
+import { formatDate } from "@/lib/utils";
 
 interface Session {
   id: string;
   sessionName: string;
+  sessionDate: string | null;
+  sequenceInEvent: number | null;
   eventId: string | null;
 }
 
 interface Event {
   id: string;
   eventName: string;
+  eventDateStart: string | null;
+  eventDateEnd: string | null;
+  eventType: string | null;
 }
 
 interface SessionWithHierarchy {
@@ -22,18 +28,32 @@ interface SessionWithHierarchy {
 interface SessionSelectProps {
   sessions: SessionWithHierarchy[];
   defaultValue?: string | null;
+  value?: string | null;
+  onChange?: (sessionId: string) => void;
   name?: string;
   label?: string;
+  disabled?: boolean;
 }
 
 export function SessionSelect({
   sessions,
   defaultValue,
+  value,
+  onChange,
   name = "sessionId",
   label = "Session",
+  disabled = false,
 }: SessionSelectProps) {
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string>(defaultValue || "");
+  const [internalSelectedId, setInternalSelectedId] = useState<string>(defaultValue || "");
+  const selectedId = value !== undefined ? (value || "") : internalSelectedId;
+  const setSelectedId = (id: string) => {
+    if (onChange) {
+      onChange(id);
+    } else {
+      setInternalSelectedId(id);
+    }
+  };
   const [isOpen, setIsOpen] = useState(false);
 
   const filteredSessions = useMemo(() => {
@@ -67,15 +87,16 @@ export function SessionSelect({
             setSearch(e.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          onFocus={() => { if (!disabled) setIsOpen(true); }}
+          disabled={disabled}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
         />
 
         {/* Hidden input for form submission */}
         <input type="hidden" name={name} value={selectedId} />
 
         {/* Dropdown */}
-        {isOpen && (
+        {isOpen && !disabled && (
           <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md">
             <div
               className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm"
@@ -106,7 +127,11 @@ export function SessionSelect({
                 >
                   <div className="font-medium">{item.session.sessionName}</div>
                   <div className="text-xs text-muted-foreground">
-                    {item.event && <span>{item.event.eventName}</span>}
+                    {[
+                      item.event?.eventName,
+                      item.session.sessionDate && formatDate(item.session.sessionDate),
+                      item.session.sequenceInEvent && `#${item.session.sequenceInEvent}`,
+                    ].filter(Boolean).join(" · ")}
                   </div>
                 </div>
               ))
@@ -115,8 +140,46 @@ export function SessionSelect({
         )}
       </div>
 
+      {/* Selected session details */}
+      {selectedSession && !isOpen && (
+        <div className="text-xs text-muted-foreground mt-1.5 space-y-0.5 pl-1">
+          <div className="flex flex-wrap gap-x-3">
+            {selectedSession.event && (
+              <span>
+                <span className="opacity-50">Event:</span>{" "}
+                <a
+                  href={`/events/${selectedSession.event.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600"
+                >
+                  {selectedSession.event.eventName}
+                </a>
+              </span>
+            )}
+            {selectedSession.session.sessionDate && (
+              <span><span className="opacity-50">Date:</span> {formatDate(selectedSession.session.sessionDate)}</span>
+            )}
+            {selectedSession.session.sequenceInEvent && (
+              <span><span className="opacity-50">Seq:</span> #{selectedSession.session.sequenceInEvent}</span>
+            )}
+          </div>
+          <div>
+            <span className="opacity-50">ID:</span>{" "}
+            <a
+              href={`/sessions/${selectedSession.session.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[10px] hover:text-blue-600"
+            >
+              {selectedSession.session.id}
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Backdrop to close dropdown */}
-      {isOpen && (
+      {isOpen && !disabled && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}

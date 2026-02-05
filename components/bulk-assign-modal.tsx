@@ -2,16 +2,23 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EventSelect } from "@/components/event-select";
+import { SessionSelect } from "@/components/session-select";
 import { bulkAssignAssets } from "@/lib/actions";
 
 interface Event {
   id: string;
   eventName: string;
+  eventDateStart: string | null;
+  eventDateEnd: string | null;
+  eventType: string | null;
 }
 
 interface Session {
   id: string;
   sessionName: string;
+  sessionDate: string | null;
+  sequenceInEvent: number | null;
   eventId: string | null;
 }
 
@@ -74,143 +81,84 @@ export function BulkAssignModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="border-b px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              Bulk Assign Assets
-            </h2>
+        <div className="px-6 pt-5 pb-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Assign Assets</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {selectedAssetIds.length} asset{selectedAssetIds.length !== 1 ? "s" : ""} selected
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 -mt-1 -mr-1 p-1"
               aria-label="Close"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Assigning {selectedAssetIds.length} asset{selectedAssetIds.length !== 1 ? "s" : ""}
-          </p>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 pb-6 space-y-5">
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-3">
-              <div className="text-sm text-red-800">{error}</div>
+            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
-          {/* Assignment Mode */}
-          <div>
-            <label className="text-sm font-medium block mb-2">Assignment Level</label>
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="bulk-mode-event"
-                  name="bulk-assignment-mode"
-                  value="event"
-                  checked={mode === "event"}
-                  onChange={() => {
-                    setMode("event");
-                    setSelectedSessionId("");
-                  }}
-                  className="h-4 w-4"
-                />
-                <label htmlFor="bulk-mode-event" className="text-sm cursor-pointer">
-                  Event (Quick)
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="bulk-mode-session"
-                  name="bulk-assignment-mode"
-                  value="session"
-                  checked={mode === "session"}
-                  onChange={() => {
-                    setMode("session");
-                    setSelectedEventId("");
-                  }}
-                  className="h-4 w-4"
-                />
-                <label htmlFor="bulk-mode-session" className="text-sm cursor-pointer">
-                  Session (Detailed)
-                </label>
-              </div>
-            </div>
+          {/* Assignment Mode Toggle */}
+          <div className="flex rounded-md border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setMode("event"); setSelectedSessionId(""); }}
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                mode === "event"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              Assign to Event
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode("session"); setSelectedEventId(""); }}
+              className={`flex-1 px-4 py-2 text-sm font-medium border-l transition-colors ${
+                mode === "session"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              Assign to Session
+            </button>
           </div>
 
-          {/* Event Selection */}
-          {mode === "event" && (
-            <div>
-              <label htmlFor="bulk-event-select" className="text-sm font-medium block mb-2">
-                Select Event
-              </label>
-              <select
-                id="bulk-event-select"
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">-- Select an Event --</option>
-                {events.map((event) => (
-                  <option key={event.id} value={event.id}>
-                    {event.eventName}
-                  </option>
-                ))}
-              </select>
-              {selectedEvent && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  All {selectedAssetIds.length} assets will be assigned directly to "{selectedEvent.eventName}"
-                </p>
-              )}
-            </div>
+          {/* Selection */}
+          {mode === "event" ? (
+            <EventSelect
+              events={events}
+              value={selectedEventId}
+              onChange={setSelectedEventId}
+              placeholder="Search events..."
+            />
+          ) : (
+            <SessionSelect
+              sessions={sessions}
+              value={selectedSessionId}
+              onChange={setSelectedSessionId}
+              label=""
+              name=""
+            />
           )}
 
-          {/* Session Selection */}
-          {mode === "session" && (
-            <div>
-              <label htmlFor="bulk-session-select" className="text-sm font-medium block mb-2">
-                Select Session
-              </label>
-              <select
-                id="bulk-session-select"
-                value={selectedSessionId}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">-- Select a Session --</option>
-                {sessions.map(({ session, event }) => (
-                  <option key={session.id} value={session.id}>
-                    {event ? `${event.eventName} > ` : ""}{session.sessionName}
-                  </option>
-                ))}
-              </select>
-              {selectedSession && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  All {selectedAssetIds.length} assets will be assigned to session "{selectedSession.session.sessionName}"
-                  {selectedSession.event && ` in event "${selectedSession.event.eventName}"`}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Info Box */}
-          <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <div className="text-sm text-blue-800">
-                <strong className="font-medium">Note:</strong> This will overwrite any existing assignments for the selected assets.
-              </div>
-            </div>
-          </div>
+          {/* Warning */}
+          <p className="text-xs text-muted-foreground">
+            This will overwrite any existing assignments for the selected assets.
+          </p>
         </div>
 
         {/* Footer */}

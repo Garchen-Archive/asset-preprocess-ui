@@ -41,11 +41,16 @@ type Asset = {
 type Event = {
   id: string;
   eventName: string;
+  eventDateStart: string | null;
+  eventDateEnd: string | null;
+  eventType: string | null;
 };
 
 type Session = {
   id: string;
   sessionName: string;
+  sessionDate: string | null;
+  sequenceInEvent: number | null;
   eventId: string | null;
 };
 
