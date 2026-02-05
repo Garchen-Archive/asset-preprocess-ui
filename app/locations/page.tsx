@@ -14,11 +14,15 @@ export default async function LocationsPage({
     search?: string;
     type?: string;
     country?: string;
+    sortBy?: string;
+    sortOrder?: string;
   };
 }) {
   const search = searchParams.search || "";
   const typeFilter = searchParams.type || "";
   const countryFilter = searchParams.country || "";
+  const sortBy = searchParams.sortBy || "name";
+  const sortOrder = searchParams.sortOrder || "asc";
 
   // Build where conditions for locations
   const conditions = [];
@@ -84,6 +88,28 @@ export default async function LocationsPage({
     filteredLocations = [...filteredLocations, ...additional];
   }
 
+  // Sort filtered locations
+  filteredLocations.sort((a, b) => {
+    const aAddr = primaryAddressMap.get(a.id);
+    const bAddr = primaryAddressMap.get(b.id);
+    let aVal: string | null = null;
+    let bVal: string | null = null;
+    switch (sortBy) {
+      case "code": aVal = a.code; bVal = b.code; break;
+      case "name": aVal = a.name; bVal = b.name; break;
+      case "type": aVal = a.locationType; bVal = b.locationType; break;
+      case "city": aVal = aAddr?.city ?? null; bVal = bAddr?.city ?? null; break;
+      case "stateProvince": aVal = aAddr?.stateProvince ?? null; bVal = bAddr?.stateProvince ?? null; break;
+      case "country": aVal = aAddr?.country ?? null; bVal = bAddr?.country ?? null; break;
+      default: aVal = a.name; bVal = b.name;
+    }
+    if (!aVal && !bVal) return 0;
+    if (!aVal) return 1;
+    if (!bVal) return -1;
+    const cmp = aVal.localeCompare(bVal);
+    return sortOrder === "desc" ? -cmp : cmp;
+  });
+
   // Get unique countries from primary addresses for filter dropdown
   const countries = await db
     .selectDistinct({ country: addresses.country })
@@ -101,6 +127,39 @@ export default async function LocationsPage({
     .from(locations)
     .where(sql`${locations.locationType} IS NOT NULL AND ${locations.locationType} != ''`)
     .orderBy(locations.locationType);
+
+  const getSortUrl = (column: string) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (typeFilter) params.set("type", typeFilter);
+    if (countryFilter) params.set("country", countryFilter);
+    params.set("sortBy", column);
+    params.set("sortOrder", sortBy === column && sortOrder === "asc" ? "desc" : "asc");
+    return `/locations?${params}`;
+  };
+
+  const sortHeader = (column: string, label: string) => {
+    const isActive = sortBy === column;
+    return (
+      <th className="px-4 py-3 text-left text-sm font-medium">
+        <Link
+          href={getSortUrl(column)}
+          className="flex items-center gap-1 hover:underline group cursor-pointer"
+        >
+          {label}
+          {isActive ? (
+            <span className="text-xs font-bold">
+              {sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+              ↕
+            </span>
+          )}
+        </Link>
+      </th>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -177,12 +236,12 @@ export default async function LocationsPage({
         <table className="w-full">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left text-sm font-medium">Code</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">City</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">State/Province</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Country</th>
+              {sortHeader("code", "Code")}
+              {sortHeader("name", "Name")}
+              {sortHeader("type", "Type")}
+              {sortHeader("city", "City")}
+              {sortHeader("stateProvince", "State/Province")}
+              {sortHeader("country", "Country")}
               <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
             </tr>
           </thead>
