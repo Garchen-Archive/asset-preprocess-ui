@@ -963,7 +963,7 @@ export async function bulkAssignAssets({
         sessionId: sessionId || null,
         updatedAt: new Date(),
       })
-      .where(sql`${archiveAssets.id} = ANY(${assetIds})`);
+      .where(inArray(archiveAssets.id, assetIds));
 
     revalidatePath("/assets");
     return { success: true };

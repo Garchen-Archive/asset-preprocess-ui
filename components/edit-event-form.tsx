@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelectWithCreate } from "@/components/multi-select-with-create";
 import { VenueSelect, type VenueWithDetails } from "@/components/venue-select";
+import { OrgSelect } from "@/components/org-select";
 import { updateEvent } from "@/lib/actions";
 import type { Event, Topic, Category, Organization } from "@/lib/db/schema";
 
@@ -198,63 +199,43 @@ export function EditEventForm({
           <h2 className="text-xl font-semibold mb-4">Orgs & Venue</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="hostOrganizationId">Host Org</Label>
-              <select
-                id="hostOrganizationId"
+              <OrgSelect
+                organizations={allOrganizations}
                 name="hostOrganizationId"
+                label="Host Org"
                 value={hostOrganizationId}
-                onChange={(e) => handleHostOrgChange(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Select host org...</option>
-                {allOrganizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name} ({org.code})
-                  </option>
-                ))}
-              </select>
+                onChange={handleHostOrgChange}
+                placeholder="Search host org..."
+              />
               <p className="text-xs text-muted-foreground mt-1">
                 The org hosting this event at their location. <Link href="/organizations/new" className="text-blue-600 hover:underline">Create new</Link>
               </p>
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="onlineHostOrganizationId">Online Host Org (optional)</Label>
-              <select
-                id="onlineHostOrganizationId"
+              <OrgSelect
+                organizations={allOrganizations}
                 name="onlineHostOrganizationId"
+                label="Online Host Org (optional)"
                 value={onlineHostOrganizationId}
-                onChange={(e) => setOnlineHostOrganizationId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">None</option>
-                {allOrganizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name} ({org.code})
-                  </option>
-                ))}
-              </select>
+                onChange={setOnlineHostOrganizationId}
+                placeholder="Search online host org..."
+              />
               <p className="text-xs text-muted-foreground mt-1">
                 Org responsible for online streaming/hosting (Zoom, YouTube, etc.)
               </p>
             </div>
 
             <div className="md:col-span-2 opacity-50">
-              <Label htmlFor="organizerOrganizationId" className="text-muted-foreground">Organizer Org (optional, for future use)</Label>
-              <select
-                id="organizerOrganizationId"
+              <OrgSelect
+                organizations={allOrganizations}
                 name="organizerOrganizationId"
+                label="Organizer Org (optional, for future use)"
                 value={organizerOrganizationId}
-                onChange={(e) => setOrganizerOrganizationId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Not set</option>
-                {allOrganizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name} ({org.code})
-                  </option>
-                ))}
-              </select>
+                onChange={setOrganizerOrganizationId}
+                placeholder="Search organizer org..."
+                disabled
+              />
               <p className="text-xs text-muted-foreground mt-1">
                 Org that organized/sponsored this event (often same as host)
               </p>

@@ -200,7 +200,7 @@ export default async function EventsPage({
 
     // All organizations for bulk edit modal
     db
-      .select({ id: organizations.id, name: organizations.name })
+      .select({ id: organizations.id, code: organizations.code, name: organizations.name })
       .from(organizations)
       .orderBy(organizations.name),
   ]);

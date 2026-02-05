@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { OrgSelect } from "@/components/org-select";
 import { bulkUpdateEvents } from "@/lib/actions";
 
 interface EventsBulkEditModalProps {
   selectedEventIds: string[];
-  organizations: { id: string; name: string }[];
+  organizations: { id: string; code: string; name: string }[];
   availableTypes: string[];
   onClose: () => void;
   onSuccess: () => void;
@@ -127,17 +128,14 @@ export function EventsBulkEditModal({
               enabled={enabledFields.hostOrganizationId}
               onToggle={() => toggleField("hostOrganizationId")}
             >
-              <select
+              <OrgSelect
+                organizations={organizations}
                 value={hostOrganizationId}
-                onChange={(e) => setHostOrganizationId(e.target.value)}
+                onChange={setHostOrganizationId}
+                name=""
+                placeholder="Search host org..."
                 disabled={!enabledFields.hostOrganizationId}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
-              >
-                <option value="">— None —</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
+              />
             </FieldRow>
 
             <FieldRow
@@ -145,17 +143,14 @@ export function EventsBulkEditModal({
               enabled={enabledFields.organizerOrganizationId}
               onToggle={() => toggleField("organizerOrganizationId")}
             >
-              <select
+              <OrgSelect
+                organizations={organizations}
                 value={organizerOrganizationId}
-                onChange={(e) => setOrganizerOrganizationId(e.target.value)}
+                onChange={setOrganizerOrganizationId}
+                name=""
+                placeholder="Search organizer org..."
                 disabled={!enabledFields.organizerOrganizationId}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
-              >
-                <option value="">— None —</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </select>
+              />
             </FieldRow>
           </div>
 
