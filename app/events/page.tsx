@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import { events, organizations } from "@/lib/db/schema";
-import { asc, desc, ilike, eq, and, sql } from "drizzle-orm";
+import { asc, desc, ilike, eq, and, sql, gte, lte } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/pagination";
@@ -23,6 +23,10 @@ export default async function EventsPage({
     country?: string;
     locationRaw?: string;
     metadataSearch?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    topic?: string;
+    category?: string;
     sortBy?: string;
     sortOrder?: string;
     page?: string;
@@ -38,6 +42,10 @@ export default async function EventsPage({
   const countryFilter = searchParams.country || "";
   const locationRawFilter = searchParams.locationRaw || "";
   const metadataSearch = searchParams.metadataSearch || "";
+  const dateFromFilter = searchParams.dateFrom || "";
+  const dateToFilter = searchParams.dateTo || "";
+  const topicFilter = searchParams.topic || "";
+  const categoryFilter = searchParams.category || "";
   const sortBy = searchParams.sortBy || "createdAt";
   const sortOrder = searchParams.sortOrder || "desc";
   const page = parseInt(searchParams.page || "1");
@@ -98,6 +106,24 @@ export default async function EventsPage({
     conditions.push(sql`${events.additionalMetadata}::text ILIKE ${`%${metadataSearch}%`}`);
   }
 
+  // Date range filter
+  if (dateFromFilter) {
+    conditions.push(gte(events.eventDateStart, dateFromFilter));
+  }
+  if (dateToFilter) {
+    conditions.push(lte(events.eventDateStart, dateToFilter));
+  }
+
+  // Topic filter (comma-delimited field, use ILIKE for partial match)
+  if (topicFilter) {
+    conditions.push(ilike(events.topic, `%${topicFilter}%`));
+  }
+
+  // Category filter (comma-delimited field, use ILIKE for partial match)
+  if (categoryFilter) {
+    conditions.push(ilike(events.category, `%${categoryFilter}%`));
+  }
+
   // Get total count for pagination
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -106,7 +132,7 @@ export default async function EventsPage({
 
   const totalPages = Math.ceil(count / perPage);
 
-  // Get events with asset counts, session counts, child event counts, parent event name, and location name
+  // Get events with asset counts, session counts, child event counts, parent event name, and organizer name
   const eventsList = await db
     .select({
       event: events,
@@ -115,6 +141,11 @@ export default async function EventsPage({
          FROM events e2
          WHERE e2.id = events.parent_event_id)
       `.as('parent_event_name'),
+      organizerName: sql<string>`
+        (SELECT o.name
+         FROM organizations o
+         WHERE o.id = events.organizer_organization_id)
+      `.as('organizer_name'),
       sessionCount: sql<number>`
         COALESCE(
           (SELECT COUNT(*)
@@ -156,7 +187,7 @@ export default async function EventsPage({
     .offset(offset);
 
   // Fetch distinct values for filter dropdowns + organizations for bulk edit
-  const [types, organizers, hostingCenters, countries, locationTexts, allOrganizations] = await Promise.all([
+  const [types, organizers, hostingCenters, countries, locationTexts, allOrganizations, distinctTopics, distinctCategories] = await Promise.all([
     // Distinct event types
     db
       .selectDistinct({ type: events.eventType })
@@ -203,6 +234,20 @@ export default async function EventsPage({
       .select({ id: organizations.id, code: organizations.code, name: organizations.name })
       .from(organizations)
       .orderBy(organizations.name),
+
+    // Distinct topics
+    db
+      .selectDistinct({ topic: events.topic })
+      .from(events)
+      .where(sql`${events.topic} IS NOT NULL AND ${events.topic} != ''`)
+      .orderBy(events.topic),
+
+    // Distinct categories
+    db
+      .selectDistinct({ category: events.category })
+      .from(events)
+      .where(sql`${events.category} IS NOT NULL AND ${events.category} != ''`)
+      .orderBy(events.category),
   ]);
 
   return (
@@ -231,11 +276,17 @@ export default async function EventsPage({
         countryFilter={countryFilter}
         locationRawFilter={locationRawFilter}
         metadataSearch={metadataSearch}
+        dateFromFilter={dateFromFilter}
+        dateToFilter={dateToFilter}
+        topicFilter={topicFilter}
+        categoryFilter={categoryFilter}
         availableTypes={types}
         availableOrganizers={organizers}
         availableHostingCenters={hostingCenters.map((h) => h.value).filter(Boolean)}
         availableCountries={countries.map((c) => c.value).filter(Boolean)}
         availableLocationTexts={locationTexts.map((l) => l.value).filter(Boolean)}
+        availableTopics={distinctTopics.map((t) => t.topic).filter(Boolean) as string[]}
+        availableCategories={distinctCategories.map((c) => c.category).filter(Boolean) as string[]}
       />
 
       {/* Results Info */}
@@ -270,6 +321,10 @@ export default async function EventsPage({
           ...(countryFilter && { country: countryFilter }),
           ...(locationRawFilter && { locationRaw: locationRawFilter }),
           ...(metadataSearch && { metadataSearch }),
+          ...(dateFromFilter && { dateFrom: dateFromFilter }),
+          ...(dateToFilter && { dateTo: dateToFilter }),
+          ...(topicFilter && { topic: topicFilter }),
+          ...(categoryFilter && { category: categoryFilter }),
           ...(sortBy !== "createdAt" && { sortBy }),
           ...(sortOrder !== "desc" && { sortOrder }),
         }}

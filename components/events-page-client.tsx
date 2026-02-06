@@ -5,15 +5,30 @@ import Link from "next/link";
 import { ExpandableEventRow } from "./expandable-event-row";
 import { EventsBulkEditModal } from "./events-bulk-edit-modal";
 import { Button } from "./ui/button";
+import { ColumnVisibilityToggle, type ColumnConfig } from "./column-visibility-toggle";
 import type { Event } from "@/lib/db/schema";
 
 type EventRow = {
   event: Event;
   parentEventName: string | null;
+  organizerName: string | null;
   sessionCount: number;
   assetCount: number;
   childEventCount: number;
 };
+
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { key: "eventName", label: "Event Name", visible: true },
+  { key: "type", label: "Type", visible: true },
+  { key: "dateRange", label: "Date Range", visible: true },
+  { key: "childEvents", label: "Child Events", visible: true },
+  { key: "sessions", label: "Sessions", visible: true },
+  { key: "assets", label: "Assets", visible: true },
+  { key: "status", label: "Status", visible: true },
+  { key: "topic", label: "Topic", visible: false },
+  { key: "category", label: "Category", visible: false },
+  { key: "organizer", label: "Organizer", visible: false },
+];
 
 type EventsPageClientProps = {
   eventsList: EventRow[];
@@ -36,6 +51,12 @@ export function EventsPageClient({
 }: EventsPageClientProps) {
   const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+
+  const isColumnVisible = (key: string) => {
+    const column = columns.find((col) => col.key === key);
+    return column?.visible ?? false;
+  };
 
   const getSortUrl = (column: string) => {
     const newSortOrder = sortBy === column && sortOrder === "asc" ? "desc" : "asc";
@@ -125,6 +146,15 @@ export function EventsPageClient({
         </div>
       )}
 
+      {/* Column Visibility Toggle */}
+      <div className="flex justify-end mb-4">
+        <ColumnVisibilityToggle
+          columns={columns}
+          onChange={setColumns}
+          storageKey="events-table-columns"
+        />
+      </div>
+
       {/* Events Table */}
       <div className="rounded-md border">
         <table className="w-full">
@@ -142,28 +172,64 @@ export function EventsPageClient({
                 />
               </th>
               <th className="px-4 py-3 text-left text-sm font-medium w-16">#</th>
-              <SortableHeader column="eventName">Event Name</SortableHeader>
-              <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
-              <SortableHeader column="eventDateStart">Date Range</SortableHeader>
-              <th className="px-4 py-3 text-left text-sm font-medium">Child Events</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Sessions</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Assets</th>
-              <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+              {isColumnVisible("eventName") && (
+                <SortableHeader column="eventName">Event Name</SortableHeader>
+              )}
+              {isColumnVisible("type") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+              )}
+              {isColumnVisible("dateRange") && (
+                <SortableHeader column="eventDateStart">Date Range</SortableHeader>
+              )}
+              {isColumnVisible("topic") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Topic</th>
+              )}
+              {isColumnVisible("category") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Category</th>
+              )}
+              {isColumnVisible("organizer") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Organizer</th>
+              )}
+              {isColumnVisible("childEvents") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Child Events</th>
+              )}
+              {isColumnVisible("sessions") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Sessions</th>
+              )}
+              {isColumnVisible("assets") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Assets</th>
+              )}
+              {isColumnVisible("status") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+              )}
               <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {eventsList.map(({ event, parentEventName, sessionCount, assetCount, childEventCount }, index) => (
+            {eventsList.map(({ event, parentEventName, organizerName, sessionCount, assetCount, childEventCount }, index) => (
               <ExpandableEventRow
                 key={event.id}
                 event={event}
                 parentEventName={parentEventName}
+                organizerName={organizerName}
                 childEventCount={childEventCount}
                 sessionCount={sessionCount}
                 assetCount={assetCount}
                 index={index + offset}
                 isSelected={selectedEventIds.includes(event.id)}
                 onToggleSelect={() => handleToggleEvent(event.id)}
+                visibleColumns={{
+                  eventName: isColumnVisible("eventName"),
+                  type: isColumnVisible("type"),
+                  dateRange: isColumnVisible("dateRange"),
+                  topic: isColumnVisible("topic"),
+                  category: isColumnVisible("category"),
+                  organizer: isColumnVisible("organizer"),
+                  childEvents: isColumnVisible("childEvents"),
+                  sessions: isColumnVisible("sessions"),
+                  assets: isColumnVisible("assets"),
+                  status: isColumnVisible("status"),
+                }}
               />
             ))}
           </tbody>

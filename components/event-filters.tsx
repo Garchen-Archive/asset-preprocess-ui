@@ -16,11 +16,17 @@ interface EventFiltersProps {
   countryFilter: string;
   locationRawFilter: string;
   metadataSearch: string;
+  dateFromFilter: string;
+  dateToFilter: string;
+  topicFilter: string;
+  categoryFilter: string;
   availableTypes: { type: string | null }[];
   availableOrganizers: { id: string; name: string }[];
   availableHostingCenters: string[];
   availableCountries: string[];
   availableLocationTexts: string[];
+  availableTopics: string[];
+  availableCategories: string[];
 }
 
 export function EventFilters({
@@ -34,13 +40,24 @@ export function EventFilters({
   countryFilter,
   locationRawFilter,
   metadataSearch,
+  dateFromFilter,
+  dateToFilter,
+  topicFilter,
+  categoryFilter,
   availableTypes,
   availableOrganizers,
   availableHostingCenters,
   availableCountries,
   availableLocationTexts,
+  availableTopics,
+  availableCategories,
 }: EventFiltersProps) {
-  const structuredFilterCount = organizerFilter ? 1 : 0;
+  const dateFilterCount = (dateFromFilter ? 1 : 0) + (dateToFilter ? 1 : 0);
+
+  const contentFilterCount =
+    (topicFilter ? 1 : 0) +
+    (categoryFilter ? 1 : 0) +
+    (organizerFilter ? 1 : 0);
 
   const metadataFilterCount =
     (hostingCenterFilter ? 1 : 0) +
@@ -58,7 +75,11 @@ export function EventFilters({
     hostingCenterFilter ||
     countryFilter ||
     locationRawFilter ||
-    metadataSearch;
+    metadataSearch ||
+    dateFromFilter ||
+    dateToFilter ||
+    topicFilter ||
+    categoryFilter;
 
   return (
     <form className="rounded-lg border p-4" method="GET">
@@ -132,16 +153,81 @@ export function EventFilters({
         </div>
       </div>
 
-      {/* Organizer Filter */}
-      {availableOrganizers.length > 0 && (
-        <CollapsibleFilterSection
-          title="Organizer"
-          badge={structuredFilterCount}
-          defaultOpen={structuredFilterCount > 0}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Date Range Filter */}
+      <CollapsibleFilterSection
+        title="Date Range"
+        badge={dateFilterCount}
+        defaultOpen={dateFilterCount > 0}
+      >
+        <p className="text-xs text-muted-foreground mb-3">
+          Filter events by start date range
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">From</label>
+            <Input
+              type="date"
+              name="dateFrom"
+              defaultValue={dateFromFilter}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">To</label>
+            <Input
+              type="date"
+              name="dateTo"
+              defaultValue={dateToFilter}
+            />
+          </div>
+        </div>
+      </CollapsibleFilterSection>
+
+      {/* Topic, Category, Organizer Filters */}
+      <CollapsibleFilterSection
+        title="Topic / Category / Organizer"
+        badge={contentFilterCount}
+        defaultOpen={contentFilterCount > 0}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {availableTopics.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Organizer Org</label>
+              <label className="text-sm font-medium mb-1.5 block">Topic</label>
+              <select
+                name="topic"
+                defaultValue={topicFilter}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">All Topics</option>
+                {availableTopics.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {availableCategories.length > 0 && (
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Category</label>
+              <select
+                name="category"
+                defaultValue={categoryFilter}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">All Categories</option>
+                {availableCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {availableOrganizers.length > 0 && (
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Organizer</label>
               <select
                 name="organizer"
                 defaultValue={organizerFilter}
@@ -155,9 +241,9 @@ export function EventFilters({
                 ))}
               </select>
             </div>
-          </div>
-        </CollapsibleFilterSection>
-      )}
+          )}
+        </div>
+      </CollapsibleFilterSection>
 
       {/* Sheet Metadata Filters */}
       <CollapsibleFilterSection
