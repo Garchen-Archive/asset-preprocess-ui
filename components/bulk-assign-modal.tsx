@@ -104,7 +104,7 @@ export function BulkAssignModal({
         </div>
 
         {/* Body */}
-        <div className="px-6 pb-6 space-y-5">
+        <div className="px-6 pb-6 space-y-5 min-h-[350px]">
           {error && (
             <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2">
               <p className="text-sm text-red-800">{error}</p>
