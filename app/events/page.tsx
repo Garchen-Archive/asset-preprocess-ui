@@ -25,6 +25,7 @@ export default async function EventsPage({
     metadataSearch?: string;
     dateFrom?: string;
     dateTo?: string;
+    dateExact?: string;
     topic?: string;
     category?: string;
     sortBy?: string;
@@ -44,6 +45,7 @@ export default async function EventsPage({
   const metadataSearch = searchParams.metadataSearch || "";
   const dateFromFilter = searchParams.dateFrom || "";
   const dateToFilter = searchParams.dateTo || "";
+  const dateExactFilter = searchParams.dateExact || "";
   const topicFilter = searchParams.topic || "";
   const categoryFilter = searchParams.category || "";
   const sortBy = searchParams.sortBy || "createdAt";
@@ -56,7 +58,13 @@ export default async function EventsPage({
   const conditions = [];
 
   if (search) {
-    conditions.push(ilike(events.eventName, `%${search}%`));
+    conditions.push(
+      sql`(
+        ${events.eventName} ILIKE ${`%${search}%`}
+        OR ${events.eventDateStart}::text ILIKE ${`%${search}%`}
+        OR ${events.eventDateEnd}::text ILIKE ${`%${search}%`}
+      )`
+    );
   }
 
   if (statusFilter) {
@@ -104,6 +112,16 @@ export default async function EventsPage({
 
   if (metadataSearch) {
     conditions.push(sql`${events.additionalMetadata}::text ILIKE ${`%${metadataSearch}%`}`);
+  }
+
+  // Exact date filter - LIKE search on start or end date
+  if (dateExactFilter) {
+    conditions.push(
+      sql`(
+        ${events.eventDateStart}::text LIKE ${`%${dateExactFilter}%`}
+        OR ${events.eventDateEnd}::text LIKE ${`%${dateExactFilter}%`}
+      )`
+    );
   }
 
   // Date range filter
@@ -157,9 +175,9 @@ export default async function EventsPage({
       assetCount: sql<number>`
         COALESCE(
           (SELECT COUNT(DISTINCT a.id)
-           FROM sessions s
-           LEFT JOIN archive_assets a ON a.session_id = s.id
-           WHERE s.event_id = events.id
+           FROM archive_assets a
+           WHERE a.event_id = events.id
+              OR a.session_id IN (SELECT s.id FROM sessions s WHERE s.event_id = events.id)
           ), 0
         )::int
       `.as('asset_count'),
@@ -278,6 +296,7 @@ export default async function EventsPage({
         metadataSearch={metadataSearch}
         dateFromFilter={dateFromFilter}
         dateToFilter={dateToFilter}
+        dateExactFilter={dateExactFilter}
         topicFilter={topicFilter}
         categoryFilter={categoryFilter}
         availableTypes={types}
@@ -323,6 +342,7 @@ export default async function EventsPage({
           ...(metadataSearch && { metadataSearch }),
           ...(dateFromFilter && { dateFrom: dateFromFilter }),
           ...(dateToFilter && { dateTo: dateToFilter }),
+          ...(dateExactFilter && { dateExact: dateExactFilter }),
           ...(topicFilter && { topic: topicFilter }),
           ...(categoryFilter && { category: categoryFilter }),
           ...(sortBy !== "createdAt" && { sortBy }),

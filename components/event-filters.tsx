@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CollapsibleFilterSection } from "@/components/collapsible-filter-section";
+import { SearchableSelect } from "@/components/searchable-select";
 
 interface EventFiltersProps {
   search: string;
@@ -18,6 +19,7 @@ interface EventFiltersProps {
   metadataSearch: string;
   dateFromFilter: string;
   dateToFilter: string;
+  dateExactFilter: string;
   topicFilter: string;
   categoryFilter: string;
   availableTypes: { type: string | null }[];
@@ -42,6 +44,7 @@ export function EventFilters({
   metadataSearch,
   dateFromFilter,
   dateToFilter,
+  dateExactFilter,
   topicFilter,
   categoryFilter,
   availableTypes,
@@ -52,9 +55,10 @@ export function EventFilters({
   availableTopics,
   availableCategories,
 }: EventFiltersProps) {
-  const dateFilterCount = (dateFromFilter ? 1 : 0) + (dateToFilter ? 1 : 0);
-
-  const contentFilterCount =
+  const advancedFilterCount =
+    (dateFromFilter ? 1 : 0) +
+    (dateToFilter ? 1 : 0) +
+    (dateExactFilter ? 1 : 0) +
     (topicFilter ? 1 : 0) +
     (categoryFilter ? 1 : 0) +
     (organizerFilter ? 1 : 0);
@@ -78,42 +82,43 @@ export function EventFilters({
     metadataSearch ||
     dateFromFilter ||
     dateToFilter ||
+    dateExactFilter ||
     topicFilter ||
     categoryFilter;
 
   return (
-    <form className="rounded-lg border p-4" method="GET">
+    <form className="rounded-lg border p-3" method="GET">
       {/* Primary filters - always visible */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-2">
-          <label className="text-sm font-medium mb-1.5 block">Search</label>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div className="col-span-2">
+          <label className="text-xs font-medium mb-1 block">Search</label>
           <Input
             name="search"
-            placeholder="Search by event name..."
+            placeholder="Search by name or date..."
             defaultValue={search}
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1.5 block">View</label>
+          <label className="text-xs font-medium mb-1 block">View</label>
           <select
             name="view"
             defaultValue={viewFilter}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
           >
-            <option value="top-level">Top-Level Events</option>
-            <option value="all">All Events</option>
+            <option value="top-level">Top-Level</option>
+            <option value="all">All</option>
           </select>
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1.5 block">Status</label>
+          <label className="text-xs font-medium mb-1 block">Status</label>
           <select
             name="status"
             defaultValue={statusFilter}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
           >
-            <option value="">All Statuses</option>
+            <option value="">All</option>
             <option value="null">Not Started</option>
             <option value="In Progress">In Progress</option>
             <option value="Ready">Ready</option>
@@ -122,13 +127,13 @@ export function EventFilters({
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1.5 block">Type</label>
+          <label className="text-xs font-medium mb-1 block">Type</label>
           <select
             name="type"
             defaultValue={typeFilter}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
           >
-            <option value="">All Types</option>
+            <option value="">All</option>
             {availableTypes.map((t) => (
               <option key={t.type} value={t.type!}>
                 {t.type}
@@ -138,13 +143,13 @@ export function EventFilters({
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-1.5 block">Source</label>
+          <label className="text-xs font-medium mb-1 block">Source</label>
           <select
             name="source"
             defaultValue={sourceFilter}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
           >
-            <option value="">All Sources</option>
+            <option value="">All</option>
             <option value="admin_tool">Admin Tool</option>
             <option value="google_sheet">Google Sheet</option>
             <option value="migration">Migration</option>
@@ -153,18 +158,27 @@ export function EventFilters({
         </div>
       </div>
 
-      {/* Date Range Filter */}
+      {/* Advanced Filters - Date, Topic, Category, Organizer */}
       <CollapsibleFilterSection
-        title="Date Range"
-        badge={dateFilterCount}
-        defaultOpen={dateFilterCount > 0}
+        title="Advanced Filters"
+        badge={advancedFilterCount}
+        defaultOpen={advancedFilterCount > 0}
       >
-        <p className="text-xs text-muted-foreground mb-3">
-          Filter events by start date range
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          {/* Date Search */}
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium mb-1 block">Date Search</label>
+            <Input
+              type="text"
+              name="dateExact"
+              placeholder="2019, 2019-07, 2019-07-13"
+              defaultValue={dateExactFilter}
+            />
+          </div>
+
+          {/* Date Range */}
           <div>
-            <label className="text-sm font-medium mb-1.5 block">From</label>
+            <label className="text-xs font-medium mb-1 block">From</label>
             <Input
               type="date"
               name="dateFrom"
@@ -172,62 +186,44 @@ export function EventFilters({
             />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1.5 block">To</label>
+            <label className="text-xs font-medium mb-1 block">To</label>
             <Input
               type="date"
               name="dateTo"
               defaultValue={dateToFilter}
             />
           </div>
-        </div>
-      </CollapsibleFilterSection>
 
-      {/* Topic, Category, Organizer Filters */}
-      <CollapsibleFilterSection
-        title="Topic / Category / Organizer"
-        badge={contentFilterCount}
-        defaultOpen={contentFilterCount > 0}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Topic */}
           {availableTopics.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Topic</label>
-              <select
+              <label className="text-xs font-medium mb-1 block">Topic</label>
+              <SearchableSelect
+                options={availableTopics}
+                value={topicFilter}
                 name="topic"
-                defaultValue={topicFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">All Topics</option>
-                {availableTopics.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                placeholder="Search topics..."
+              />
             </div>
           )}
 
+          {/* Category */}
           {availableCategories.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Category</label>
-              <select
+              <label className="text-xs font-medium mb-1 block">Category</label>
+              <SearchableSelect
+                options={availableCategories}
+                value={categoryFilter}
                 name="category"
-                defaultValue={categoryFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">All Categories</option>
-                {availableCategories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                placeholder="Search categories..."
+              />
             </div>
           )}
 
+          {/* Organizer */}
           {availableOrganizers.length > 0 && (
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Organizer</label>
+            <div className="md:col-span-2">
+              <label className="text-xs font-medium mb-1 block">Organizer</label>
               <select
                 name="organizer"
                 defaultValue={organizerFilter}
@@ -251,27 +247,24 @@ export function EventFilters({
         badge={metadataFilterCount}
         defaultOpen={metadataFilterCount > 0}
       >
-        <p className="text-xs text-muted-foreground mb-3">
-          Raw values imported from Google Sheets (stored in additional_metadata)
-        </p>
-        <div className="mb-4">
-          <label className="text-sm font-medium mb-1.5 block">Search All Metadata</label>
-          <Input
-            name="metadataSearch"
-            placeholder="Search across all metadata fields..."
-            defaultValue={metadataSearch}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="text-xs font-medium mb-1 block">Search Metadata</label>
+            <Input
+              name="metadataSearch"
+              placeholder="Search all..."
+              defaultValue={metadataSearch}
+            />
+          </div>
           {availableHostingCenters.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">hosting_center</label>
+              <label className="text-xs font-medium mb-1 block">Hosting Center</label>
               <select
                 name="hostingCenter"
                 defaultValue={hostingCenterFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
               >
-                <option value="">All Hosting Centers</option>
+                <option value="">All</option>
                 {availableHostingCenters.map((hc) => (
                   <option key={hc} value={hc}>
                     {hc}
@@ -280,16 +273,15 @@ export function EventFilters({
               </select>
             </div>
           )}
-
           {availableCountries.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">country_raw</label>
+              <label className="text-xs font-medium mb-1 block">Country</label>
               <select
                 name="country"
                 defaultValue={countryFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
               >
-                <option value="">All Countries</option>
+                <option value="">All</option>
                 {availableCountries.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -298,16 +290,15 @@ export function EventFilters({
               </select>
             </div>
           )}
-
           {availableLocationTexts.length > 0 && (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">location_raw</label>
+              <label className="text-xs font-medium mb-1 block">Location</label>
               <select
                 name="locationRaw"
                 defaultValue={locationRawFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-2 text-sm"
               >
-                <option value="">All Locations</option>
+                <option value="">All</option>
                 {availableLocationTexts.map((l) => (
                   <option key={l} value={l}>
                     {l}
@@ -320,11 +311,11 @@ export function EventFilters({
       </CollapsibleFilterSection>
 
       {/* Action buttons */}
-      <div className="flex gap-2 mt-4 pt-4 border-t">
-        <Button type="submit">Apply Filters</Button>
+      <div className="flex gap-2 mt-3 pt-3 border-t">
+        <Button type="submit" size="sm">Apply</Button>
         {hasActiveFilters && (
-          <Button type="button" variant="outline" asChild>
-            <Link href="/events">Clear All</Link>
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link href="/events">Clear</Link>
           </Button>
         )}
       </div>

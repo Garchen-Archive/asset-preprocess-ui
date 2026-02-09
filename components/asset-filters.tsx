@@ -25,6 +25,9 @@ interface AssetFiltersProps {
   hasTimestampedTranscriptFilter: string;
   transcriptsAvailableFilter: string;
   needsDetailedReviewFilter: string;
+  dateSearchFilter: string;
+  dateFromFilter: string;
+  dateToFilter: string;
 }
 
 const PROCESSING_STATUS_OPTIONS = [
@@ -65,8 +68,12 @@ export function AssetFilters({
   hasTimestampedTranscriptFilter,
   transcriptsAvailableFilter,
   needsDetailedReviewFilter,
+  dateSearchFilter,
+  dateFromFilter,
+  dateToFilter,
 }: AssetFiltersProps) {
   // Count active filters for badges
+  const dateFilterCount = (dateSearchFilter ? 1 : 0) + (dateFromFilter ? 1 : 0) + (dateToFilter ? 1 : 0);
   const processingFilterCount = selectedStatuses.length + (needsDetailedReviewFilter ? 1 : 0);
   const transcriptFilterCount =
     selectedTranscriptLangs.length +
@@ -94,7 +101,10 @@ export function AssetFilters({
     selectedTranscriptLangs.length > 0 ||
     hasTimestampedTranscriptFilter ||
     transcriptsAvailableFilter ||
-    needsDetailedReviewFilter;
+    needsDetailedReviewFilter ||
+    dateSearchFilter ||
+    dateFromFilter ||
+    dateToFilter;
 
   return (
     <form className="rounded-lg border p-4" method="GET">
@@ -135,6 +145,44 @@ export function AssetFilters({
           </select>
         </div>
       </div>
+
+      {/* Date Filters */}
+      <CollapsibleFilterSection
+        title="Date"
+        badge={dateFilterCount}
+        defaultOpen={dateFilterCount > 0}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium mb-1 block">Date Search</label>
+            <Input
+              type="text"
+              name="dateSearch"
+              placeholder="2019, 2019-07, or 2019-07-13"
+              defaultValue={dateSearchFilter}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Searches file creation date and original content/recording date
+            </p>
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">From</label>
+            <Input
+              type="date"
+              name="dateFrom"
+              defaultValue={dateFromFilter}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">To</label>
+            <Input
+              type="date"
+              name="dateTo"
+              defaultValue={dateToFilter}
+            />
+          </div>
+        </div>
+      </CollapsibleFilterSection>
 
       {/* Processing Filters */}
       <CollapsibleFilterSection
