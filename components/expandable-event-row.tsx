@@ -25,7 +25,7 @@ interface VisibleColumns {
   dateRange: boolean;
   topic: boolean;
   category: boolean;
-  organizer: boolean;
+  hostOrg: boolean;
   childEvents: boolean;
   sessions: boolean;
   assets: boolean;
@@ -36,6 +36,7 @@ interface ExpandableEventRowProps {
   event: Event;
   parentEventName: string | null;
   organizerName: string | null;
+  hostOrgName: string | null;
   childEventCount: number;
   sessionCount: number;
   assetCount: number;
@@ -51,7 +52,7 @@ const defaultVisibleColumns: VisibleColumns = {
   dateRange: true,
   topic: false,
   category: false,
-  organizer: false,
+  hostOrg: false,
   childEvents: true,
   sessions: true,
   assets: true,
@@ -62,6 +63,7 @@ export function ExpandableEventRow({
   event,
   parentEventName,
   organizerName,
+  hostOrgName,
   childEventCount,
   sessionCount,
   assetCount,
@@ -159,8 +161,8 @@ export function ExpandableEventRow({
         {visibleColumns.category && (
           <td className="px-4 py-3 text-sm">{event.category || "—"}</td>
         )}
-        {visibleColumns.organizer && (
-          <td className="px-4 py-3 text-sm">{organizerName || "—"}</td>
+        {visibleColumns.hostOrg && (
+          <td className="px-4 py-3 text-sm">{hostOrgName || "—"}</td>
         )}
         {visibleColumns.childEvents && (
           <td className="px-4 py-3 text-sm">

@@ -2,8 +2,13 @@
 
 import { useState, useMemo } from "react";
 
+interface OptionItem {
+  value: string;
+  label: string;
+}
+
 interface SearchableSelectProps {
-  options: string[];
+  options: string[] | OptionItem[];
   value?: string;
   onChange?: (value: string) => void;
   name?: string;
@@ -23,11 +28,29 @@ export function SearchableSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(initialValue);
 
+  // Normalize options to OptionItem format
+  const normalizedOptions: OptionItem[] = useMemo(() => {
+    if (options.length === 0) return [];
+    if (typeof options[0] === "string") {
+      return (options as string[]).map((opt) => ({ value: opt, label: opt }));
+    }
+    return options as OptionItem[];
+  }, [options]);
+
   const filteredOptions = useMemo(() => {
-    if (!search) return options;
+    if (!search) return normalizedOptions;
     const searchLower = search.toLowerCase();
-    return options.filter((opt) => opt.toLowerCase().includes(searchLower));
-  }, [options, search]);
+    return normalizedOptions.filter((opt) =>
+      opt.label.toLowerCase().includes(searchLower)
+    );
+  }, [normalizedOptions, search]);
+
+  // Get the display label for the selected value
+  const selectedLabel = useMemo(() => {
+    if (!selectedValue) return "";
+    const found = normalizedOptions.find((opt) => opt.value === selectedValue);
+    return found ? found.label : selectedValue;
+  }, [selectedValue, normalizedOptions]);
 
   const handleSelect = (val: string) => {
     setSelectedValue(val);
@@ -41,7 +64,7 @@ export function SearchableSelect({
       <input
         type="text"
         placeholder={placeholder}
-        value={isOpen ? search : selectedValue}
+        value={isOpen ? search : selectedLabel}
         onChange={(e) => {
           setSearch(e.target.value);
           setIsOpen(true);
@@ -70,13 +93,13 @@ export function SearchableSelect({
           ) : (
             filteredOptions.map((opt) => (
               <div
-                key={opt}
+                key={opt.value}
                 className={`px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm ${
-                  selectedValue === opt ? "bg-accent" : ""
+                  selectedValue === opt.value ? "bg-accent" : ""
                 }`}
-                onClick={() => handleSelect(opt)}
+                onClick={() => handleSelect(opt.value)}
               >
-                {opt}
+                {opt.label}
               </div>
             ))
           )}

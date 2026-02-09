@@ -12,6 +12,7 @@ type EventRow = {
   event: Event;
   parentEventName: string | null;
   organizerName: string | null;
+  hostOrgName: string | null;
   sessionCount: number;
   assetCount: number;
   childEventCount: number;
@@ -27,7 +28,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "status", label: "Status", visible: true },
   { key: "topic", label: "Topic", visible: false },
   { key: "category", label: "Category", visible: false },
-  { key: "organizer", label: "Organizer", visible: false },
+  { key: "hostOrg", label: "Host Org", visible: false },
 ];
 
 type EventsPageClientProps = {
@@ -182,13 +183,13 @@ export function EventsPageClient({
                 <SortableHeader column="eventDateStart">Date Range</SortableHeader>
               )}
               {isColumnVisible("topic") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Topic</th>
+                <SortableHeader column="topic">Topic</SortableHeader>
               )}
               {isColumnVisible("category") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Category</th>
+                <SortableHeader column="category">Category</SortableHeader>
               )}
-              {isColumnVisible("organizer") && (
-                <th className="px-4 py-3 text-left text-sm font-medium">Organizer</th>
+              {isColumnVisible("hostOrg") && (
+                <SortableHeader column="hostOrg">Host Org</SortableHeader>
               )}
               {isColumnVisible("childEvents") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Child Events</th>
@@ -206,12 +207,13 @@ export function EventsPageClient({
             </tr>
           </thead>
           <tbody>
-            {eventsList.map(({ event, parentEventName, organizerName, sessionCount, assetCount, childEventCount }, index) => (
+            {eventsList.map(({ event, parentEventName, organizerName, hostOrgName, sessionCount, assetCount, childEventCount }, index) => (
               <ExpandableEventRow
                 key={event.id}
                 event={event}
                 parentEventName={parentEventName}
                 organizerName={organizerName}
+                hostOrgName={hostOrgName}
                 childEventCount={childEventCount}
                 sessionCount={sessionCount}
                 assetCount={assetCount}
@@ -224,7 +226,7 @@ export function EventsPageClient({
                   dateRange: isColumnVisible("dateRange"),
                   topic: isColumnVisible("topic"),
                   category: isColumnVisible("category"),
-                  organizer: isColumnVisible("organizer"),
+                  hostOrg: isColumnVisible("hostOrg"),
                   childEvents: isColumnVisible("childEvents"),
                   sessions: isColumnVisible("sessions"),
                   assets: isColumnVisible("assets"),

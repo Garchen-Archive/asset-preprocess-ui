@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CollapsibleFilterSection } from "@/components/collapsible-filter-section";
 import { SearchableSelect } from "@/components/searchable-select";
+import { OrgSelect } from "@/components/org-select";
 
 interface EventFiltersProps {
   search: string;
@@ -23,7 +24,7 @@ interface EventFiltersProps {
   topicFilter: string;
   categoryFilter: string;
   availableTypes: { type: string | null }[];
-  availableOrganizers: { id: string; name: string }[];
+  availableOrganizers: { id: string; code: string; name: string }[];
   availableHostingCenters: string[];
   availableCountries: string[];
   availableLocationTexts: string[];
@@ -60,8 +61,7 @@ export function EventFilters({
     (dateToFilter ? 1 : 0) +
     (dateExactFilter ? 1 : 0) +
     (topicFilter ? 1 : 0) +
-    (categoryFilter ? 1 : 0) +
-    (organizerFilter ? 1 : 0);
+    (categoryFilter ? 1 : 0);
 
   const metadataFilterCount =
     (hostingCenterFilter ? 1 : 0) +
@@ -89,13 +89,24 @@ export function EventFilters({
   return (
     <form className="rounded-lg border p-3" method="GET">
       {/* Primary filters - always visible */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
         <div className="col-span-2">
           <label className="text-xs font-medium mb-1 block">Search</label>
           <Input
             name="search"
             placeholder="Search by name or date..."
             defaultValue={search}
+          />
+        </div>
+
+        <div>
+          <OrgSelect
+            organizations={availableOrganizers}
+            defaultValue={organizerFilter}
+            name="organizer"
+            label="Host Org"
+            placeholder="Select org..."
+            compact
           />
         </div>
 
@@ -158,7 +169,7 @@ export function EventFilters({
         </div>
       </div>
 
-      {/* Advanced Filters - Date, Topic, Category, Organizer */}
+      {/* Advanced Filters - Date, Topic, Category */}
       <CollapsibleFilterSection
         title="Advanced Filters"
         badge={advancedFilterCount}
@@ -220,24 +231,6 @@ export function EventFilters({
             </div>
           )}
 
-          {/* Organizer */}
-          {availableOrganizers.length > 0 && (
-            <div className="md:col-span-2">
-              <label className="text-xs font-medium mb-1 block">Organizer</label>
-              <select
-                name="organizer"
-                defaultValue={organizerFilter}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">All Organizers</option>
-                {availableOrganizers.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       </CollapsibleFilterSection>
 

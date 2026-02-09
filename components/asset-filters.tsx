@@ -79,14 +79,15 @@ export function AssetFilters({
     selectedTranscriptLangs.length +
     (hasTimestampedTranscriptFilter ? 1 : 0) +
     (transcriptsAvailableFilter ? 1 : 0);
+  // excludeFilter defaults to "false" (Included), so only count as active filter if explicitly set to something else
   const fileFilterCount =
     selectedFormats.length +
     (isMediaFileFilter ? 1 : 0) +
     (safeToDeleteFilter ? 1 : 0) +
-    (excludeFilter ? 1 : 0);
+    (excludeFilter && excludeFilter !== "false" ? 1 : 0);
   const interpreterFilterCount = selectedInterpreterLangs.length + (hasOralTranslationFilter ? 1 : 0);
 
-  // Check if any filters are active
+  // Check if any filters are active (excludeFilter defaults to "false", so only count as active if different)
   const hasActiveFilters =
     search ||
     selectedStatuses.length > 0 ||
@@ -94,7 +95,7 @@ export function AssetFilters({
     sourceFilter ||
     isMediaFileFilter ||
     safeToDeleteFilter ||
-    excludeFilter ||
+    (excludeFilter && excludeFilter !== "false") ||
     selectedFormats.length > 0 ||
     hasOralTranslationFilter ||
     selectedInterpreterLangs.length > 0 ||

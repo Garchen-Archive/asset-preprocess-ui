@@ -92,9 +92,9 @@ export default async function EventsPage({
     conditions.push(sql`${events.parentEventId} IS NULL`);
   }
 
-  // Organizer filter
+  // Host org filter
   if (organizerFilter) {
-    conditions.push(eq(events.organizerOrganizationId, organizerFilter));
+    conditions.push(eq(events.hostOrganizationId, organizerFilter));
   }
 
   // Additional metadata filters
@@ -164,6 +164,11 @@ export default async function EventsPage({
          FROM organizations o
          WHERE o.id = events.organizer_organization_id)
       `.as('organizer_name'),
+      hostOrgName: sql<string>`
+        (SELECT o.name
+         FROM organizations o
+         WHERE o.id = events.host_organization_id)
+      `.as('host_org_name'),
       sessionCount: sql<number>`
         COALESCE(
           (SELECT COUNT(*)
@@ -193,10 +198,17 @@ export default async function EventsPage({
     .from(events)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy((() => {
+      // Handle special cases for sorting by related fields
+      if (sortBy === "hostOrg") {
+        const hostOrgSort = sql`(SELECT o.name FROM organizations o WHERE o.id = events.host_organization_id)`;
+        return sortOrder === "asc" ? asc(hostOrgSort) : desc(hostOrgSort);
+      }
       const col = {
         eventName: events.eventName,
         eventDateStart: events.eventDateStart,
         eventDateEnd: events.eventDateEnd,
+        topic: events.topic,
+        category: events.category,
         createdAt: events.createdAt,
       }[sortBy] || events.createdAt;
       return sortOrder === "asc" ? asc(col) : desc(col);
@@ -300,7 +312,7 @@ export default async function EventsPage({
         topicFilter={topicFilter}
         categoryFilter={categoryFilter}
         availableTypes={types}
-        availableOrganizers={organizers}
+        availableOrganizers={allOrganizations}
         availableHostingCenters={hostingCenters.map((h) => h.value).filter(Boolean)}
         availableCountries={countries.map((c) => c.value).filter(Boolean)}
         availableLocationTexts={locationTexts.map((l) => l.value).filter(Boolean)}

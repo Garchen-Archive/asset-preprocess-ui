@@ -44,7 +44,8 @@ export default async function AssetsPage({
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
   const safeToDeleteFilter = searchParams.safeToDelete || "";
-  const excludeFilter = searchParams.exclude || "";
+  // Default to showing only included assets (not excluded from archive) when page loads fresh
+  const excludeFilter = searchParams.exclude === undefined ? "false" : searchParams.exclude;
   const formatsFilterRaw = searchParams.formats || "";
   // Handle both string (single format) and array (multiple formats) from URL params
   const selectedFormats = Array.isArray(formatsFilterRaw)
@@ -291,8 +292,8 @@ export default async function AssetsPage({
       return Array.from(allLangs).sort();
     });
 
-  // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !excludeFilter && selectedFormats.length === 0 && !hasOralTranslationFilter && selectedInterpreterLangs.length === 0 && selectedTranscriptLangs.length === 0 && !hasTimestampedTranscriptFilter && !transcriptsAvailableFilter && !needsDetailedReviewFilter && !dateSearchFilter && !dateFromFilter && !dateToFilter;
+  // Get statistics for counters (only when no filters applied - excludeFilter must be empty/"All")
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && excludeFilter === "" && selectedFormats.length === 0 && !hasOralTranslationFilter && selectedInterpreterLangs.length === 0 && selectedTranscriptLangs.length === 0 && !hasTimestampedTranscriptFilter && !transcriptsAvailableFilter && !needsDetailedReviewFilter && !dateSearchFilter && !dateFromFilter && !dateToFilter;
   let stats = null;
 
   if (showStats) {
@@ -425,7 +426,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(excludeFilter && { exclude: excludeFilter }),
+          exclude: excludeFilter,
           ...(formatsFilter && { formats: formatsFilter }),
           ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
           ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
@@ -451,7 +452,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(excludeFilter && { exclude: excludeFilter }),
+          exclude: excludeFilter,
           ...(formatsFilter && { formats: formatsFilter }),
           ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
           ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
