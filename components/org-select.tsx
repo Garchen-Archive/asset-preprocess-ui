@@ -19,6 +19,7 @@ interface OrgSelectProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 export function OrgSelect({
@@ -31,6 +32,7 @@ export function OrgSelect({
   placeholder = "Search orgs by code or name...",
   required = false,
   disabled = false,
+  compact = false,
 }: OrgSelectProps) {
   const [search, setSearch] = useState("");
   const [internalSelectedId, setInternalSelectedId] = useState<string>(defaultValue || "");
@@ -59,12 +61,16 @@ export function OrgSelect({
   const getOrgLabel = (org: OrgOption) => `${org.code} - ${org.name}`;
 
   return (
-    <div className="space-y-2">
+    <div className={compact ? "" : "space-y-2"}>
       {label && (
-        <Label htmlFor={name}>
-          {label}
-          {required && <span className="text-destructive ml-1">*</span>}
-        </Label>
+        compact ? (
+          <label className="text-xs font-medium mb-1 block">{label}</label>
+        ) : (
+          <Label htmlFor={name}>
+            {label}
+            {required && <span className="text-destructive ml-1">*</span>}
+          </Label>
+        )
       )}
       <div className="relative">
         <input
@@ -79,7 +85,7 @@ export function OrgSelect({
             if (!disabled) setIsOpen(true);
           }}
           disabled={disabled}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+          className={`flex h-10 w-full rounded-md border border-input bg-background py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 ${compact ? "px-2" : "px-3"}`}
         />
 
         <input type="hidden" name={name} value={selectedId} />

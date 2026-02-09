@@ -25,6 +25,9 @@ interface AssetFiltersProps {
   hasTimestampedTranscriptFilter: string;
   transcriptsAvailableFilter: string;
   needsDetailedReviewFilter: string;
+  dateSearchFilter: string;
+  dateFromFilter: string;
+  dateToFilter: string;
 }
 
 const PROCESSING_STATUS_OPTIONS = [
@@ -65,21 +68,26 @@ export function AssetFilters({
   hasTimestampedTranscriptFilter,
   transcriptsAvailableFilter,
   needsDetailedReviewFilter,
+  dateSearchFilter,
+  dateFromFilter,
+  dateToFilter,
 }: AssetFiltersProps) {
   // Count active filters for badges
+  const dateFilterCount = (dateSearchFilter ? 1 : 0) + (dateFromFilter ? 1 : 0) + (dateToFilter ? 1 : 0);
   const processingFilterCount = selectedStatuses.length + (needsDetailedReviewFilter ? 1 : 0);
   const transcriptFilterCount =
     selectedTranscriptLangs.length +
     (hasTimestampedTranscriptFilter ? 1 : 0) +
     (transcriptsAvailableFilter ? 1 : 0);
+  // excludeFilter defaults to "false" (Included), so only count as active filter if explicitly set to something else
   const fileFilterCount =
     selectedFormats.length +
     (isMediaFileFilter ? 1 : 0) +
     (safeToDeleteFilter ? 1 : 0) +
-    (excludeFilter ? 1 : 0);
+    (excludeFilter && excludeFilter !== "false" ? 1 : 0);
   const interpreterFilterCount = selectedInterpreterLangs.length + (hasOralTranslationFilter ? 1 : 0);
 
-  // Check if any filters are active
+  // Check if any filters are active (excludeFilter defaults to "false", so only count as active if different)
   const hasActiveFilters =
     search ||
     selectedStatuses.length > 0 ||
@@ -87,14 +95,17 @@ export function AssetFilters({
     sourceFilter ||
     isMediaFileFilter ||
     safeToDeleteFilter ||
-    excludeFilter ||
+    (excludeFilter && excludeFilter !== "false") ||
     selectedFormats.length > 0 ||
     hasOralTranslationFilter ||
     selectedInterpreterLangs.length > 0 ||
     selectedTranscriptLangs.length > 0 ||
     hasTimestampedTranscriptFilter ||
     transcriptsAvailableFilter ||
-    needsDetailedReviewFilter;
+    needsDetailedReviewFilter ||
+    dateSearchFilter ||
+    dateFromFilter ||
+    dateToFilter;
 
   return (
     <form className="rounded-lg border p-4" method="GET">
@@ -135,6 +146,44 @@ export function AssetFilters({
           </select>
         </div>
       </div>
+
+      {/* Date Filters */}
+      <CollapsibleFilterSection
+        title="Date"
+        badge={dateFilterCount}
+        defaultOpen={dateFilterCount > 0}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2">
+            <label className="text-xs font-medium mb-1 block">Date Search</label>
+            <Input
+              type="text"
+              name="dateSearch"
+              placeholder="2019, 2019-07, or 2019-07-13"
+              defaultValue={dateSearchFilter}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Searches file creation date and original content/recording date
+            </p>
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">From</label>
+            <Input
+              type="date"
+              name="dateFrom"
+              defaultValue={dateFromFilter}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">To</label>
+            <Input
+              type="date"
+              name="dateTo"
+              defaultValue={dateToFilter}
+            />
+          </div>
+        </div>
+      </CollapsibleFilterSection>
 
       {/* Processing Filters */}
       <CollapsibleFilterSection

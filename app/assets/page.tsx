@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import { archiveAssets, events, sessions } from "@/lib/db/schema";
-import { desc, sql, ilike, or, eq, and, asc } from "drizzle-orm";
+import { desc, sql, ilike, or, eq, and, asc, gte, lte } from "drizzle-orm";
 import { AssetsPageClient } from "@/components/assets-page-client";
 import { Pagination } from "@/components/pagination";
 import { AssetFilters } from "@/components/asset-filters";
@@ -25,6 +25,9 @@ export default async function AssetsPage({
     hasTimestampedTranscript?: string;
     transcriptsAvailable?: string;
     needsDetailedReview?: string;
+    dateSearch?: string;
+    dateFrom?: string;
+    dateTo?: string;
     sortBy?: string;
     sortOrder?: string;
     page?: string;
@@ -41,7 +44,8 @@ export default async function AssetsPage({
   const sourceFilter = searchParams.source || "";
   const isMediaFileFilter = searchParams.isMediaFile || "";
   const safeToDeleteFilter = searchParams.safeToDelete || "";
-  const excludeFilter = searchParams.exclude || "";
+  // Default to showing only included assets (not excluded from archive) when page loads fresh
+  const excludeFilter = searchParams.exclude === undefined ? "false" : searchParams.exclude;
   const formatsFilterRaw = searchParams.formats || "";
   // Handle both string (single format) and array (multiple formats) from URL params
   const selectedFormats = Array.isArray(formatsFilterRaw)
@@ -68,6 +72,9 @@ export default async function AssetsPage({
   const hasTimestampedTranscriptFilter = searchParams.hasTimestampedTranscript || "";
   const transcriptsAvailableFilter = searchParams.transcriptsAvailable || "";
   const needsDetailedReviewFilter = searchParams.needsDetailedReview || "";
+  const dateSearchFilter = searchParams.dateSearch || "";
+  const dateFromFilter = searchParams.dateFrom || "";
+  const dateToFilter = searchParams.dateTo || "";
 
   const sortBy = searchParams.sortBy || "createdAt";
   const sortOrder = searchParams.sortOrder || "desc";
@@ -199,6 +206,24 @@ export default async function AssetsPage({
     }
   }
 
+  // Date search filter - LIKE search on createdDate or originalDate
+  if (dateSearchFilter) {
+    conditions.push(
+      sql`(
+        ${archiveAssets.createdDate}::text LIKE ${`%${dateSearchFilter}%`}
+        OR ${archiveAssets.originalDate}::text LIKE ${`%${dateSearchFilter}%`}
+      )`
+    );
+  }
+
+  // Date range filter - filter by createdDate
+  if (dateFromFilter) {
+    conditions.push(gte(archiveAssets.createdDate, new Date(dateFromFilter)));
+  }
+  if (dateToFilter) {
+    conditions.push(lte(archiveAssets.createdDate, new Date(dateToFilter)));
+  }
+
   // Get total count for pagination
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -267,8 +292,8 @@ export default async function AssetsPage({
       return Array.from(allLangs).sort();
     });
 
-  // Get statistics for counters (only when no filters applied)
-  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && !excludeFilter && selectedFormats.length === 0 && !hasOralTranslationFilter && selectedInterpreterLangs.length === 0 && selectedTranscriptLangs.length === 0 && !hasTimestampedTranscriptFilter && !transcriptsAvailableFilter && !needsDetailedReviewFilter;
+  // Get statistics for counters (only when no filters applied - excludeFilter must be empty/"All")
+  const showStats = !search && !statusFilter && !typeFilter && !sourceFilter && !isMediaFileFilter && !safeToDeleteFilter && excludeFilter === "" && selectedFormats.length === 0 && !hasOralTranslationFilter && selectedInterpreterLangs.length === 0 && selectedTranscriptLangs.length === 0 && !hasTimestampedTranscriptFilter && !transcriptsAvailableFilter && !needsDetailedReviewFilter && !dateSearchFilter && !dateFromFilter && !dateToFilter;
   let stats = null;
 
   if (showStats) {
@@ -375,6 +400,9 @@ export default async function AssetsPage({
         hasTimestampedTranscriptFilter={hasTimestampedTranscriptFilter}
         transcriptsAvailableFilter={transcriptsAvailableFilter}
         needsDetailedReviewFilter={needsDetailedReviewFilter}
+        dateSearchFilter={dateSearchFilter}
+        dateFromFilter={dateFromFilter}
+        dateToFilter={dateToFilter}
       />
 
       {/* Results Info */}
@@ -398,7 +426,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(excludeFilter && { exclude: excludeFilter }),
+          exclude: excludeFilter,
           ...(formatsFilter && { formats: formatsFilter }),
           ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
           ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
@@ -406,6 +434,9 @@ export default async function AssetsPage({
           ...(hasTimestampedTranscriptFilter && { hasTimestampedTranscript: hasTimestampedTranscriptFilter }),
           ...(transcriptsAvailableFilter && { transcriptsAvailable: transcriptsAvailableFilter }),
           ...(needsDetailedReviewFilter && { needsDetailedReview: needsDetailedReviewFilter }),
+          ...(dateSearchFilter && { dateSearch: dateSearchFilter }),
+          ...(dateFromFilter && { dateFrom: dateFromFilter }),
+          ...(dateToFilter && { dateTo: dateToFilter }),
         }}
       />
 
@@ -421,7 +452,7 @@ export default async function AssetsPage({
           ...(sourceFilter && { source: sourceFilter }),
           ...(isMediaFileFilter && { isMediaFile: isMediaFileFilter }),
           ...(safeToDeleteFilter && { safeToDelete: safeToDeleteFilter }),
-          ...(excludeFilter && { exclude: excludeFilter }),
+          exclude: excludeFilter,
           ...(formatsFilter && { formats: formatsFilter }),
           ...(hasOralTranslationFilter && { hasOralTranslation: hasOralTranslationFilter }),
           ...(interpreterLangsFilter && { interpreterLangs: interpreterLangsFilter }),
@@ -429,6 +460,9 @@ export default async function AssetsPage({
           ...(hasTimestampedTranscriptFilter && { hasTimestampedTranscript: hasTimestampedTranscriptFilter }),
           ...(transcriptsAvailableFilter && { transcriptsAvailable: transcriptsAvailableFilter }),
           ...(needsDetailedReviewFilter && { needsDetailedReview: needsDetailedReviewFilter }),
+          ...(dateSearchFilter && { dateSearch: dateSearchFilter }),
+          ...(dateFromFilter && { dateFrom: dateFromFilter }),
+          ...(dateToFilter && { dateTo: dateToFilter }),
         }}
       />
     </div>

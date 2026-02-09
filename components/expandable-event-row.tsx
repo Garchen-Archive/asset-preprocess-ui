@@ -19,26 +19,58 @@ interface ChildEvent {
   eventDateStart: string | null;
 }
 
+interface VisibleColumns {
+  eventName: boolean;
+  type: boolean;
+  dateRange: boolean;
+  topic: boolean;
+  category: boolean;
+  hostOrg: boolean;
+  childEvents: boolean;
+  sessions: boolean;
+  assets: boolean;
+  status: boolean;
+}
+
 interface ExpandableEventRowProps {
   event: Event;
   parentEventName: string | null;
+  organizerName: string | null;
+  hostOrgName: string | null;
   childEventCount: number;
   sessionCount: number;
   assetCount: number;
   index: number;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  visibleColumns?: VisibleColumns;
 }
+
+const defaultVisibleColumns: VisibleColumns = {
+  eventName: true,
+  type: true,
+  dateRange: true,
+  topic: false,
+  category: false,
+  hostOrg: false,
+  childEvents: true,
+  sessions: true,
+  assets: true,
+  status: true,
+};
 
 export function ExpandableEventRow({
   event,
   parentEventName,
+  organizerName,
+  hostOrgName,
   childEventCount,
   sessionCount,
   assetCount,
   index,
   isSelected,
   onToggleSelect,
+  visibleColumns = defaultVisibleColumns,
 }: ExpandableEventRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [childEvents, setChildEvents] = useState<ChildEvent[]>([]);
@@ -103,66 +135,89 @@ export function ExpandableEventRow({
           )}
           {index + 1}
         </td>
-        <td className="px-4 py-3 text-sm">
-          <div>
-            {event.eventName}
-            {parentEventName && (
-              <div className="text-xs text-muted-foreground italic mt-0.5">
-                ↑ {parentEventName}
-              </div>
-            )}
-          </div>
-        </td>
-        <td className="px-4 py-3 text-sm">{event.eventType || "—"}</td>
-        <td className="px-4 py-3 text-sm">
-          {formatDateRange(event.eventDateStart, event.eventDateEnd)}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-              childEventCount > 0
-                ? "bg-orange-100 text-orange-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {childEventCount}
-          </span>
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-              sessionCount > 0
-                ? "bg-purple-100 text-purple-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {sessionCount}
-          </span>
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-              assetCount > 0
-                ? "bg-blue-100 text-blue-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {assetCount}
-          </span>
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-              event.catalogingStatus === "Ready"
-                ? "bg-green-100 text-green-700"
-                : event.catalogingStatus === "In Progress"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {event.catalogingStatus || "Not Started"}
-          </span>
-        </td>
+        {visibleColumns.eventName && (
+          <td className="px-4 py-3 text-sm">
+            <div>
+              {event.eventName}
+              {parentEventName && (
+                <div className="text-xs text-muted-foreground italic mt-0.5">
+                  ↑ {parentEventName}
+                </div>
+              )}
+            </div>
+          </td>
+        )}
+        {visibleColumns.type && (
+          <td className="px-4 py-3 text-sm">{event.eventType || "—"}</td>
+        )}
+        {visibleColumns.dateRange && (
+          <td className="px-4 py-3 text-sm">
+            {formatDateRange(event.eventDateStart, event.eventDateEnd)}
+          </td>
+        )}
+        {visibleColumns.topic && (
+          <td className="px-4 py-3 text-sm">{event.topic || "—"}</td>
+        )}
+        {visibleColumns.category && (
+          <td className="px-4 py-3 text-sm">{event.category || "—"}</td>
+        )}
+        {visibleColumns.hostOrg && (
+          <td className="px-4 py-3 text-sm">{hostOrgName || "—"}</td>
+        )}
+        {visibleColumns.childEvents && (
+          <td className="px-4 py-3 text-sm">
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                childEventCount > 0
+                  ? "bg-orange-100 text-orange-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {childEventCount}
+            </span>
+          </td>
+        )}
+        {visibleColumns.sessions && (
+          <td className="px-4 py-3 text-sm">
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                sessionCount > 0
+                  ? "bg-purple-100 text-purple-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {sessionCount}
+            </span>
+          </td>
+        )}
+        {visibleColumns.assets && (
+          <td className="px-4 py-3 text-sm">
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                assetCount > 0
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {assetCount}
+            </span>
+          </td>
+        )}
+        {visibleColumns.status && (
+          <td className="px-4 py-3 text-sm">
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                event.catalogingStatus === "Ready"
+                  ? "bg-green-100 text-green-700"
+                  : event.catalogingStatus === "In Progress"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {event.catalogingStatus || "Not Started"}
+            </span>
+          </td>
+        )}
         <td className="px-4 py-3 text-sm" onClick={(e) => e.stopPropagation()}>
           <Link
             href={`/events/${event.id}`}
