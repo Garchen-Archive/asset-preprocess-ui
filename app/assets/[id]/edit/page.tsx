@@ -400,41 +400,80 @@ export default async function AssetEditPage({
         {/* Quality Section */}
         <div className="rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">Quality & Editorial</h2>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="needsEditing"
-                name="needsEditing"
-                defaultChecked={data.needsEditing || false}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="needsEditing" className="font-normal">
-                Needs Editing
-              </Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Audio Column */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="audioQuality">Audio Quality</Label>
+                <select
+                  id="audioQuality"
+                  name="audioQuality"
+                  defaultValue={data.audioQuality || ""}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Not rated</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                  <option value="unusable">Unusable</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="audioQualityIssues">Audio Issues</Label>
+                <Textarea
+                  id="audioQualityIssues"
+                  name="audioQualityIssues"
+                  defaultValue={data.audioQualityIssues || ""}
+                  placeholder="Describe any audio problems"
+                  rows={3}
+                />
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="audioQualityIssues">Audio Quality Issues</Label>
-              <Textarea
-                id="audioQualityIssues"
-                name="audioQualityIssues"
-                defaultValue={data.audioQualityIssues || ""}
-                placeholder="Describe any audio problems"
-                rows={2}
-              />
-            </div>
+            {/* Video Column */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="videoQuality">Video Quality</Label>
+                <select
+                  id="videoQuality"
+                  name="videoQuality"
+                  defaultValue={data.videoQuality || ""}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Not rated</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                  <option value="unusable">Unusable</option>
+                </select>
+              </div>
 
-            <div>
-              <Label htmlFor="videoQualityIssues">Video Quality Issues</Label>
-              <Textarea
-                id="videoQualityIssues"
-                name="videoQualityIssues"
-                defaultValue={data.videoQualityIssues || ""}
-                placeholder="Describe any video problems"
-                rows={2}
-              />
+              <div>
+                <Label htmlFor="videoQualityIssues">Video Issues</Label>
+                <Textarea
+                  id="videoQualityIssues"
+                  name="videoQualityIssues"
+                  defaultValue={data.videoQualityIssues || ""}
+                  placeholder="Describe any video problems"
+                  rows={3}
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Needs Editing - full width below */}
+          <div className="flex items-center space-x-2 mt-4 pt-4 border-t">
+            <input
+              type="checkbox"
+              id="needsEditing"
+              name="needsEditing"
+              defaultChecked={data.needsEditing || false}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="needsEditing" className="font-normal">
+              Needs Editing
+            </Label>
           </div>
         </div>
 

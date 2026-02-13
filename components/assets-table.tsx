@@ -29,6 +29,8 @@ type Asset = {
   fileFormat: string | null;
   bitrate: string | null;
   sampleRate: string | null;
+  audioQuality: string | null;
+  videoQuality: string | null;
   createdDate: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -58,6 +60,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: "fileFormat", label: "File Format", visible: false },
   { key: "bitrate", label: "Bitrate", visible: false },
   { key: "sampleRate", label: "Sample Rate", visible: false },
+  { key: "audioQuality", label: "Audio Quality", visible: false },
+  { key: "videoQuality", label: "Video Quality", visible: false },
   { key: "createdAt", label: "System Created At", visible: false },
   { key: "updatedAt", label: "System Updated At", visible: false },
   { key: "sourceUpdatedAt", label: "Harvest Imported At", visible: false },
@@ -245,6 +249,12 @@ export function AssetsTable({
               {isColumnVisible("sampleRate") && (
                 <th className="px-4 py-3 text-left text-sm font-medium">Sample Rate</th>
               )}
+              {isColumnVisible("audioQuality") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Audio Quality</th>
+              )}
+              {isColumnVisible("videoQuality") && (
+                <th className="px-4 py-3 text-left text-sm font-medium">Video Quality</th>
+              )}
               {isColumnVisible("createdAt") && (
                 <SortableHeader column="createdAt">Created At</SortableHeader>
               )}
@@ -367,6 +377,12 @@ export function AssetsTable({
                 )}
                 {isColumnVisible("sampleRate") && (
                   <td className="px-4 py-3 text-sm">{asset.sampleRate ? `${asset.sampleRate} Hz` : "—"}</td>
+                )}
+                {isColumnVisible("audioQuality") && (
+                  <td className="px-4 py-3 text-sm capitalize">{asset.audioQuality || "—"}</td>
+                )}
+                {isColumnVisible("videoQuality") && (
+                  <td className="px-4 py-3 text-sm capitalize">{asset.videoQuality || "—"}</td>
                 )}
                 {isColumnVisible("createdAt") && (
                   <td className="px-4 py-3 text-sm">

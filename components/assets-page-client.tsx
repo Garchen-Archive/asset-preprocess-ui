@@ -31,6 +31,8 @@ type Asset = {
   fileFormat: string | null;
   bitrate: string | null;
   sampleRate: string | null;
+  audioQuality: string | null;
+  videoQuality: string | null;
   createdDate: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;

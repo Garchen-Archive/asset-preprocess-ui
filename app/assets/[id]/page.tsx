@@ -630,10 +630,22 @@ export default async function AssetDetailPage({
           </div>
 
           {/* Quality */}
-          {(data.audioQualityIssues || data.videoQualityIssues || data.needsEditing) && (
+          {(data.audioQuality || data.videoQuality || data.audioQualityIssues || data.videoQualityIssues || data.needsEditing) && (
             <div className="rounded-lg border p-6">
-              <h2 className="text-xl font-semibold mb-4">Quality Notes</h2>
+              <h2 className="text-xl font-semibold mb-4">Quality</h2>
               <dl className="space-y-4">
+                {(data.audioQuality || data.videoQuality) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Audio Quality</dt>
+                      <dd className="text-sm mt-1 capitalize">{data.audioQuality || "Not rated"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Video Quality</dt>
+                      <dd className="text-sm mt-1 capitalize">{data.videoQuality || "Not rated"}</dd>
+                    </div>
+                  </div>
+                )}
                 {data.needsEditing && (
                   <div>
                     <dt className="text-sm font-medium text-muted-foreground">Needs Editing</dt>

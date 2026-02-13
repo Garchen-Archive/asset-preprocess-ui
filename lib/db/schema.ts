@@ -39,6 +39,8 @@ export const archiveAssets = pgTable("archive_assets", {
 
   // 4. QUALITY/EDITORIAL
   overallQuality: text("overall_quality"),
+  audioQuality: text("audio_quality"), // high, medium, low, unusable
+  videoQuality: text("video_quality"), // high, medium, low, unusable
   audioQualityIssues: text("audio_quality_issues"),
   videoQualityIssues: text("video_quality_issues"),
   needsEditing: boolean("needs_editing"),
