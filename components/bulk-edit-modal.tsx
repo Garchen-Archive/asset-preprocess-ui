@@ -26,6 +26,13 @@ const TRANSCRIPT_TIMESTAMPED_OPTIONS = [
   { value: "No", label: "No" },
 ];
 
+const QUALITY_RATING_OPTIONS = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+  { value: "unusable", label: "Unusable" },
+];
+
 const TRANSCRIPT_LANGUAGE_OPTIONS = [
   "EN", "ZH", "Tibetan", "German", "Vietnamese", "French", "Spanish", "Portuguese", "Other"
 ];
@@ -59,6 +66,8 @@ export function BulkEditModal({
   const [exclude, setExclude] = useState(false);
   const [safeToDeleteFromGdrive, setSafeToDeleteFromGdrive] = useState(false);
   const [backedUpLocally, setBackedUpLocally] = useState(false);
+  const [audioQuality, setAudioQuality] = useState("high");
+  const [videoQuality, setVideoQuality] = useState("high");
 
   const toggleField = (field: string) => {
     setEnabledFields((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -92,6 +101,8 @@ export function BulkEditModal({
       if (enabledFields.exclude) updates.exclude = exclude;
       if (enabledFields.safeToDeleteFromGdrive) updates.safeToDeleteFromGdrive = safeToDeleteFromGdrive;
       if (enabledFields.backedUpLocally) updates.backedUpLocally = backedUpLocally;
+      if (enabledFields.audioQuality) updates.audioQuality = audioQuality;
+      if (enabledFields.videoQuality) updates.videoQuality = videoQuality;
 
       if (Object.keys(updates).length === 0) {
         setError("Please select at least one field to update");
@@ -283,6 +294,45 @@ export function BulkEditModal({
                 disabled={!enabledFields.catalogingStatus}
                 placeholder="Enter cataloging status..."
               />
+            </FieldRow>
+          </div>
+
+          {/* Quality Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 border-b pb-1">Quality</h3>
+
+            <FieldRow
+              label="Audio Quality"
+              enabled={enabledFields.audioQuality}
+              onToggle={() => toggleField("audioQuality")}
+            >
+              <select
+                value={audioQuality}
+                onChange={(e) => setAudioQuality(e.target.value)}
+                disabled={!enabledFields.audioQuality}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+              >
+                {QUALITY_RATING_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow
+              label="Video Quality"
+              enabled={enabledFields.videoQuality}
+              onToggle={() => toggleField("videoQuality")}
+            >
+              <select
+                value={videoQuality}
+                onChange={(e) => setVideoQuality(e.target.value)}
+                disabled={!enabledFields.videoQuality}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+              >
+                {QUALITY_RATING_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </FieldRow>
           </div>
 

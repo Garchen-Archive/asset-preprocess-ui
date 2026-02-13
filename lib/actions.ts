@@ -52,6 +52,8 @@ export async function updateAsset(id: string, formData: FormData) {
     needsDetailedReview: formData.get("needsDetailedReview") === "on",
 
     // Quality
+    audioQuality: formData.get("audioQuality") as string || null,
+    videoQuality: formData.get("videoQuality") as string || null,
     audioQualityIssues: formData.get("audioQualityIssues") as string || null,
     videoQualityIssues: formData.get("videoQualityIssues") as string || null,
     needsEditing: formData.get("needsEditing") === "on",
@@ -993,6 +995,8 @@ export async function bulkUpdateAssets({
     exclude?: boolean | null;
     safeToDeleteFromGdrive?: boolean | null;
     backedUpLocally?: boolean | null;
+    audioQuality?: string | null;
+    videoQuality?: string | null;
   };
 }) {
   try {
